@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".PostProcess">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/image_wrapper"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="32dp"
+        android:background="#000000"
+        app:layout_constraintBottom_toTopOf="@+id/btn_takepicture"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/image_viewer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_alignParentTop="true"
+            android:background="#000000" />
+
+        <ProgressBar
+            android:id="@+id/image_progressbar"
+            style="?android:progressBarStyleHorizontal"
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
+            android:progress="25"
+            android:progressDrawable="@drawable/circle_progress"
+            android:rotation="-90"
+            app:layout_constraintBottom_toBottomOf="@+id/image_viewer"
+            app:layout_constraintEnd_toEndOf="@+id/image_viewer"
+            app:layout_constraintStart_toStartOf="@+id/image_viewer"
+            app:layout_constraintTop_toTopOf="@+id/image_viewer" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/process_seekbar_wrapper"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginEnd="32dp"
+            android:layout_marginBottom="32dp"
+            android:background="#BFFFFFFF"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="@+id/image_viewer"
+            app:layout_constraintStart_toStartOf="@+id/image_viewer">
+
+            <SeekBar
+                android:id="@+id/process_seekbar_at"
+                style="@style/Widget.AppCompat.SeekBar.Discrete"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="32dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="32dp"
+                android:layout_marginBottom="16dp"
+                android:max="4"
+                android:progress="2"
+                app:layout_constraintBottom_toTopOf="@+id/process_seekbar_canny"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.0"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <SeekBar
+                android:id="@+id/process_seekbar_canny"
+                style="@style/Widget.AppCompat.SeekBar.Discrete"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="32dp"
+                android:layout_marginEnd="32dp"
+                android:layout_marginBottom="16dp"
+                android:max="4"
+                android:progress="2"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.0"
+                app:layout_constraintStart_toStartOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <Button
+        android:id="@+id/btn_takepicture"
+        android:layout_width="200px"
+        android:layout_height="200px"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="32dp"
+        android:background="@drawable/rounded_button_background"
+        android:textSize="12sp"
+        android:transitionName="cameraButtonTransition"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
