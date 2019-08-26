@@ -12,6 +12,7 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -50,13 +51,15 @@ public class PostProcess extends AppCompatActivity {
 
     private float scalingFactor;
 
+    private ProgressBar progressBar;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         OpenCVLoader.initDebug();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_post_process);
 
-        findViewById(R.id.image_progressbar).setVisibility(View.VISIBLE);
+        findViewById(R.id.camera_captureProcess).setVisibility(View.VISIBLE);
 
         String img_path = getIntent().getStringExtra("img_path");
 
@@ -73,10 +76,12 @@ public class PostProcess extends AppCompatActivity {
 
             Bitmap bitmap = BitmapFactory.decodeFile(img_path);
             bitmap = RotateBitmap(bitmap, 90);
+
+            Bitmap[] params2 = {bitmap};
             ((ImageView) findViewById(R.id.image_viewer)).setScaleType(ImageView.ScaleType.CENTER_CROP);
             ((ImageView) findViewById(R.id.image_viewer)).setImageBitmap(bitmap);
 
-            new DownloadImageTask().execute(params);
+            new DownloadImageTask().execute(params2);
 
         } catch (RuntimeException e) {
             e.printStackTrace();
@@ -89,8 +94,12 @@ public class PostProcess extends AppCompatActivity {
         crop_2 = findViewById(R.id.crop_2);
         crop_3 = findViewById(R.id.crop_3);
         crop_4 = findViewById(R.id.crop_4);
+    }
 
-
+    @Override
+    protected void onResume() {
+        super.onResume();
+        progressBar = findViewById(R.id.camera_progressBar);
     }
 
     private void setUpSeekBar() {
@@ -418,57 +427,43 @@ public class PostProcess extends AppCompatActivity {
     }
 
     // Image loading async task ====================================================================
-    private class DownloadImageTask extends AsyncTask<String, Integer, Bitmap[]> {
+    private class DownloadImageTask extends AsyncTask<Bitmap, Integer, Bitmap[]> {
         @Override
-        protected Bitmap[] doInBackground(String... objects) {
-            Bitmap bitmap = BitmapFactory.decodeFile(objects[0]);
-            publishProgress(5);
-
-            int cropped_height = Integer.valueOf(objects[1]);
-            int cropped_width = Integer.valueOf(objects[2]);
-            int starting_y = Integer.valueOf(objects[3]);
-            publishProgress(10);
-
-            int[] pixels = new int[cropped_width * (cropped_height-starting_y)];
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            bitmap.getPixels(pixels, 0, cropped_width, 0, starting_y, cropped_width, cropped_height - starting_y);
-            publishProgress(15);
-
-            bitmap = Bitmap.createBitmap(pixels, 0, cropped_width, cropped_width, cropped_height - starting_y - starting_y, Bitmap.Config.ARGB_8888);
-            publishProgress(20);
-
-            bitmap = RotateBitmap(bitmap, 90);
-            publishProgress(25);
-
+        protected Bitmap[] doInBackground(Bitmap... bm) {
+            Bitmap bitmap = bm[0];
             Mat img = new Mat();
             Bitmap bmp32 = bitmap.copy(Bitmap.Config.ARGB_8888, true);
             Utils.bitmapToMat(bmp32, img);
+            publishProgress(35);
 
-            //Mat[] final_mats = new OpenCVProcessing().process(mat);
             Mat img_temp = img.clone();
             Mat img_canny;
             Mat[] img_finals;
             Mat[] img_at;
 
             img_temp = OpenCVProcessing.process1_contrast(img_temp);
-            publishProgress(35);
+            publishProgress(40);
+
             img_temp = OpenCVProcessing.process2_removeNoise(img_temp);
             publishProgress(45);
+
             img_canny = OpenCVProcessing.process3_canny(img_temp);
-            publishProgress(58);
+            publishProgress(55);
+
             img_at = OpenCVProcessing.process4_at(img);
-            publishProgress(70);
+            publishProgress(75);
+
             img_finals = OpenCVProcessing.process5_subtraction(img_at, img_canny);
-            publishProgress(85);
+            publishProgress(90);
 
 
             final_bitmap_array = new Bitmap[3];
 
             for (int i = 0; i < 3; i++) {
-                publishProgress(100);
                 Bitmap final_bitmap = Bitmap.createBitmap(img_finals[i].cols(), img_finals[i].rows(), Bitmap.Config.ARGB_8888);
                 Utils.matToBitmap(img_finals[i], final_bitmap);
                 final_bitmap_array[i] = final_bitmap;
+                publishProgress(100);
             }
 
             return final_bitmap_array;
@@ -476,12 +471,25 @@ public class PostProcess extends AppCompatActivity {
 
         @Override
         protected void onProgressUpdate(Integer... values) {
-            ((ProgressBar) findViewById(R.id.image_progressbar)).setProgress(values[0]);
+            progressBar.setProgress(values[0]);
         }
 
         protected void onPostExecute(Bitmap[] result) {
-            ((ProgressBar) findViewById(R.id.image_progressbar)).setVisibility(View.INVISIBLE);
+            ((ImageView) findViewById(R.id.image_viewer)).setScaleType(ImageView.ScaleType.CENTER_CROP);
             ((ImageView) findViewById(R.id.image_viewer)).setImageBitmap(result[1]);
+
+            ImageView process = findViewById(R.id.camera_captureProcess);
+            process.setVisibility(View.VISIBLE);
+            process.animate()
+                    .alpha(0f)
+                    .setDuration(300)
+                    .setListener(null);
+            progressBar.setVisibility(View.VISIBLE);
+            progressBar.animate()
+                    .alpha(0f)
+                    .setDuration(300)
+                    .setListener(null);
+
             setUpCrop();
         }
     }

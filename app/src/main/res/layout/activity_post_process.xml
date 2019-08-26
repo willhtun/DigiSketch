@@ -41,27 +41,35 @@
             android:background="#000000" />
 
         <ImageView
+            android:id="@+id/camera_captureProcess"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="#CA3333"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="@+id/image_wrapper"
+            app:layout_constraintEnd_toEndOf="@+id/image_wrapper"
+            app:layout_constraintStart_toStartOf="@+id/image_wrapper"
+            app:layout_constraintTop_toTopOf="@+id/image_wrapper" />
+
+        <ProgressBar
+            android:id="@+id/camera_progressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="96dp"
+            android:layout_marginEnd="96dp"
+            android:max="100"
+            android:progress="0"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
             android:id="@+id/image_cropMask"
             android:layout_width="0dp"
             android:layout_height="0dp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="@+id/image_viewer"
-            app:layout_constraintStart_toStartOf="@+id/image_viewer"
-            app:layout_constraintTop_toTopOf="@+id/image_viewer" />
-
-        <ProgressBar
-            android:id="@+id/image_progressbar"
-            style="?android:progressBarStyleHorizontal"
-            android:layout_width="150dp"
-            android:layout_height="150dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginBottom="8dp"
-            android:progress="0"
-            android:progressDrawable="@drawable/circle_progress"
-            android:rotation="-90"
-            app:layout_constraintBottom_toBottomOf="@+id/image_viewer"
             app:layout_constraintEnd_toEndOf="@+id/image_viewer"
             app:layout_constraintStart_toStartOf="@+id/image_viewer"
             app:layout_constraintTop_toTopOf="@+id/image_viewer" />

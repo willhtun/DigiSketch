@@ -7,14 +7,14 @@
             android:width="120dp"
             android:height="120dp"/>
         <stroke
-            android:width="10dp"
+            android:width="5dp"
             android:color="#EBB802"></stroke>
     </shape>
 </item>
 <item android:gravity="center"
         android:height="70dp">
     <vector android:height="101dp" android:viewportHeight="100.54166"
-        android:viewportWidth="50" android:width="48dp" xmlns:android="http://schemas.android.com/apk/res/android">
+        android:viewportWidth="50" android:width="38dp" xmlns:android="http://schemas.android.com/apk/res/android">
         <path android:fillAlpha="1" android:fillColor="#EBB802"
             android:pathData="M26.458,0 L0,58.208h21.167l-0,42.333L47.625,42.333L26.458,42.333Z"
             android:strokeLineCap="butt" android:strokeLineJoin="miter" android:strokeWidth="0.26458332"/>

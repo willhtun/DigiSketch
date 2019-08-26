@@ -5,15 +5,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
+import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
-import android.graphics.Paint;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
 import android.graphics.SurfaceTexture;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -35,15 +30,14 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -80,6 +74,7 @@ public class Camera extends AppCompatActivity {
     private int jpegWidth;
     private int jpegHeight;
     private boolean flashMode;
+    private ProgressBar progressBar;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -160,13 +155,21 @@ public class Camera extends AppCompatActivity {
         }
     }
     protected void takePicture() {
+        ImageView cameraCapture = findViewById(R.id.camera_captureFlicker);
+        cameraCapture.setVisibility(View.VISIBLE);
+        cameraCapture.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                findViewById(R.id.camera_captureFlicker).setVisibility(View.INVISIBLE);
+            }
+        }, 100);
+
         if(null == cameraDevice) {
             Log.e(TAG, "cameraDevice is null");
             return;
         }
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         try {
-            findViewById(R.id.camera_captureWhite).setVisibility(View.VISIBLE);
             CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraDevice.getId());
             Size[] jpegSizes = null;
             if (characteristics != null) {
@@ -189,42 +192,45 @@ public class Camera extends AppCompatActivity {
             if (flashMode)
                 captureBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_SINGLE);
             // Orientation
-            int rotation = getWindowManager().getDefaultDisplay().getRotation();
+            final int rotation = getWindowManager().getDefaultDisplay().getRotation();
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
+            captureBuilder.set(CaptureRequest.JPEG_QUALITY, (byte) 80);
             //final File file = new File(Environment.getExternalStorageDirectory()+"/pic.jpg");
             final File file = new File(this.getCacheDir()+"/cached_pic.jpg");
+
+            ImageView process = findViewById(R.id.camera_captureProcess);
+            process.setAlpha(0f);
+            process.setVisibility(View.VISIBLE);
+            process.animate()
+                    .alpha(1f)
+                    .setStartDelay(500)
+                    .setDuration(300)
+                    .setListener(null);
+            progressBar.setAlpha(0f);
+            progressBar.setVisibility(View.VISIBLE);
+            progressBar.animate()
+                    .alpha(1f)
+                    .setStartDelay(500)
+                    .setDuration(300)
+                    .setListener(null);
+
             ImageReader.OnImageAvailableListener readerListener = new ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
-                    findViewById(R.id.camera_captureWhite).setVisibility(View.INVISIBLE);
                     Image image = null;
                     try {
                         image = reader.acquireLatestImage();
                         ByteBuffer buffer = image.getPlanes()[0].getBuffer();
                         byte[] bytes = new byte[buffer.capacity()];
                         buffer.get(bytes);
-
+                        final Bitmap bitmapImage = RotateBitmap(BitmapFactory.decodeByteArray(bytes, 0, bytes.length, null), 90);
 
                         //4032:3024 -> 4032:2367
                         //1038:1768
-                        int cropped_height = jpegHeight;
-                        int cropped_width = jpegWidth;
-                        int new_height = (int) (((double) textureView.getWidth() / textureView.getHeight()) * cropped_width);
-                        int starting_y = (cropped_height - new_height) / 2; // 3024 - 1038 / 2
-                        float scaling_factor = (float) cropped_width / findViewById(R.id.image_wrapper).getHeight();
-                        /*
-                        int[] pixels = new int[cropped_width * (cropped_height-starting_y)];//the size of the array is the dimensions of the sub-photo
-                        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                        Bitmap bitmap = BitmapFactory.decodeByteArray(bytes , 0, bytes.length);
-                        bitmap.getPixels(pixels, 0, cropped_width, 0, starting_y, cropped_width, cropped_height - starting_y);//the stride value is (in my case) the width value
-                        bitmap = Bitmap.createBitmap(pixels, 0, cropped_width, cropped_width, cropped_height - starting_y - starting_y, Bitmap.Config.ARGB_8888);//ARGB_8888 is a good quality configuration
-                        bitmap = RotateBitmap(bitmap, 90);
-                        bitmap.compress(Bitmap.CompressFormat.JPEG, 50, bos);//100 is the best quality possible
-                        byte[] square = bos.toByteArray();
-                        */
-
+                        progressBar.setProgress(5);
                         String cached_path = save(bytes);
-                        openPostProcessActivity(cached_path, jpegHeight, jpegWidth, starting_y, scaling_factor);
+                        progressBar.setProgress(15);
+                        openPostProcessActivity(cached_path, jpegHeight, jpegWidth, 0, 0);
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
                     } catch (IOException e) {
@@ -373,6 +379,11 @@ public class Camera extends AppCompatActivity {
         } else {
             textureView.setSurfaceTextureListener(textureListener);
         }
+
+        findViewById(R.id.camera_captureProcess).setVisibility(View.INVISIBLE);
+        findViewById(R.id.camera_captureFlicker).setVisibility(View.INVISIBLE);
+        progressBar = findViewById(R.id.camera_progressBar);
+        progressBar.setVisibility(View.INVISIBLE);
     }
     @Override
     protected void onPause() {
