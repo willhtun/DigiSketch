@@ -4,7 +4,7 @@ android {
     compileSdkVersion 29
     buildToolsVersion "29.0.2"
     defaultConfig {
-        applicationId "com.example.digisketch"
+        applicationId "com.studio764.digisketch"
         minSdkVersion 28
         targetSdkVersion 29
         versionCode 1
@@ -27,4 +27,7 @@ dependencies {
     androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
     implementation project(path: ':OpenCVLibrary4.1')
+
+    // Google Drive
+    implementation 'com.google.android.gms:play-services-auth:17.0.0'
 }

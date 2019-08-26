@@ -2,6 +2,7 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/constraintLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".Camera">
@@ -15,6 +16,7 @@
         android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="32dp"
+        android:background="@drawable/texture_prerender_background"
         app:layout_constraintBottom_toTopOf="@+id/btn_takepicture"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -26,12 +28,36 @@
             android:layout_height="match_parent"
             android:layout_alignParentTop="true" />
 
+        <ImageView
+            android:id="@+id/camera_captureWhite"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="@+id/texture"
+            app:layout_constraintEnd_toEndOf="@+id/texture"
+            app:layout_constraintStart_toStartOf="@+id/texture"
+            app:layout_constraintTop_toTopOf="@+id/texture"
+            app:srcCompat="@android:color/white" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <ImageView
+        android:id="@+id/camera_mask"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_alignParentTop="true"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/rounded_camera_mask"
+        app:layout_constraintBottom_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/btn_takepicture"
-        android:layout_width="200px"
-        android:layout_height="200px"
+        style="@android:style/Widget.DeviceDefault.Light.Button.Inset"
+        android:layout_width="76dp"
+        android:layout_height="76dp"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="32dp"
@@ -41,5 +67,34 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
+
+    <ImageButton
+        android:id="@+id/btn_flash_off"
+        android:layout_width="76dp"
+        android:layout_height="76dp"
+        android:layout_marginStart="8dp"
+        android:background="#00FFFFFF"
+        android:onClick="toggleFlashOn"
+        android:padding="10dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/flash_button_off"
+        app:layout_constraintBottom_toBottomOf="@+id/btn_takepicture"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/btn_takepicture" />
+
+    <ImageButton
+        android:id="@+id/btn_flash_on"
+        android:layout_width="76dp"
+        android:layout_height="76dp"
+        android:layout_marginStart="8dp"
+        android:background="#00FFFFFF"
+        android:onClick="toggleFlashOff"
+        android:padding="10dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/flash_button_on"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="@+id/btn_takepicture"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/btn_takepicture" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
