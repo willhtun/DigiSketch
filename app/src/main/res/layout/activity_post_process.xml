@@ -44,22 +44,22 @@
             android:id="@+id/camera_captureProcess"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:background="#CA3333"
-            android:visibility="invisible"
+            android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="@+id/image_wrapper"
             app:layout_constraintEnd_toEndOf="@+id/image_wrapper"
             app:layout_constraintStart_toStartOf="@+id/image_wrapper"
-            app:layout_constraintTop_toTopOf="@+id/image_wrapper" />
+            app:layout_constraintTop_toTopOf="@+id/image_wrapper"
+            app:srcCompat="@drawable/processing_background" />
 
         <ProgressBar
             android:id="@+id/camera_progressBar"
             style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="5dp"
             android:layout_marginStart="96dp"
             android:layout_marginEnd="96dp"
             android:max="100"
-            android:progress="0"
+            android:progress="28"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -73,6 +73,18 @@
             app:layout_constraintEnd_toEndOf="@+id/image_viewer"
             app:layout_constraintStart_toStartOf="@+id/image_viewer"
             app:layout_constraintTop_toTopOf="@+id/image_viewer" />
+
+        <TextView
+            android:id="@+id/camera_progressText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="Processing..."
+            android:textColor="#5C5C5C"
+            android:visibility="visible"
+            app:layout_constraintBottom_toTopOf="@+id/camera_progressBar"
+            app:layout_constraintEnd_toEndOf="@+id/camera_progressBar"
+            app:layout_constraintStart_toStartOf="@+id/camera_progressBar" />
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/process_seekbar_wrapper"
@@ -98,26 +110,11 @@
                 android:layout_marginBottom="16dp"
                 android:max="2"
                 android:progress="1"
-                app:layout_constraintBottom_toTopOf="@+id/process_seekbar_canny"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.0"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
-
-            <SeekBar
-                android:id="@+id/process_seekbar_canny"
-                style="@style/Widget.AppCompat.SeekBar.Discrete"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="32dp"
-                android:layout_marginEnd="32dp"
-                android:layout_marginBottom="16dp"
-                android:max="4"
-                android:progress="2"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="0.0"
-                app:layout_constraintStart_toStartOf="parent" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -127,10 +124,10 @@
             android:layout_height="50dp"
             android:layout_marginStart="32dp"
             android:layout_marginTop="32dp"
-            android:visibility="invisible"
+            android:background="@drawable/crop1"
+            android:visibility="visible"
             app:layout_constraintStart_toStartOf="@+id/image_viewer"
-            app:layout_constraintTop_toTopOf="@+id/image_viewer"
-            app:srcCompat="@android:drawable/btn_star" />
+            app:layout_constraintTop_toTopOf="@+id/image_viewer" />
 
         <ImageView
             android:id="@+id/crop_2"
@@ -138,10 +135,10 @@
             android:layout_height="50dp"
             android:layout_marginTop="32dp"
             android:layout_marginEnd="32dp"
-            android:visibility="invisible"
+            android:background="@drawable/crop2"
+            android:visibility="visible"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/image_viewer"
-            app:srcCompat="@android:drawable/btn_star" />
+            app:layout_constraintTop_toTopOf="@+id/image_viewer" />
 
         <ImageView
             android:id="@+id/crop_3"
@@ -149,10 +146,10 @@
             android:layout_height="50dp"
             android:layout_marginEnd="32dp"
             android:layout_marginBottom="32dp"
-            android:visibility="invisible"
+            android:background="@drawable/crop3"
+            android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:srcCompat="@android:drawable/btn_star" />
+            app:layout_constraintEnd_toEndOf="parent" />
 
         <ImageView
             android:id="@+id/crop_4"
@@ -160,10 +157,10 @@
             android:layout_height="50dp"
             android:layout_marginStart="32dp"
             android:layout_marginBottom="32dp"
-            android:visibility="invisible"
+            android:background="@drawable/crop4"
+            android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="@+id/image_viewer"
-            app:srcCompat="@android:drawable/btn_star" />
+            app:layout_constraintStart_toStartOf="@+id/image_viewer" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -221,9 +218,9 @@
 
     </LinearLayout>
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <LinearLayout
         android:id="@+id/panel_adjust"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="124dp"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
@@ -233,43 +230,34 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <TextView
-            android:id="@+id/adjust_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            android:text="Adjustment Mode"
-            android:textSize="20sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
         <Button
             android:id="@+id/adjust_confirm"
-            android:layout_width="120dp"
-            android:layout_height="60dp"
-            android:layout_marginEnd="8dp"
-            android:text="Confirm"
+            android:layout_width="75dp"
+            android:layout_height="75dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="24.5dp"
+            android:layout_marginEnd="15dp"
+            android:background="@drawable/small_confirm"
             android:onClick="confirmAdjust"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <Button
             android:id="@+id/adjust_cancel"
-            android:layout_width="120dp"
-            android:layout_height="60dp"
+            android:layout_width="75dp"
+            android:layout_height="75dp"
+            android:layout_marginStart="15dp"
+            android:layout_marginTop="24.5dp"
             android:layout_marginEnd="8dp"
-            android:text="Cancel "
+            android:background="@drawable/small_cancel"
             android:onClick="cancelAdjust"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <LinearLayout
         android:id="@+id/panel_crop"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="124dp"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
@@ -279,38 +267,29 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <TextView
-            android:id="@+id/crop_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+        <Button
+            android:id="@+id/crop_confirm"
+            android:layout_width="75dp"
+            android:layout_height="75dp"
             android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            android:text="Cropping Mode"
-            android:textSize="20sp"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginTop="24.5dp"
+            android:layout_marginEnd="15dp"
+            android:background="@drawable/small_confirm"
+            android:onClick="confirmCrop"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <Button
-            android:id="@+id/crop_confirm"
-            android:layout_width="120dp"
-            android:layout_height="60dp"
-            android:layout_marginEnd="8dp"
-            android:text="Confirm "
-            android:onClick="confirmCrop"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <Button
             android:id="@+id/crop_reset"
-            android:layout_width="120dp"
-            android:layout_height="60dp"
+            android:layout_width="75dp"
+            android:layout_height="75dp"
+            android:layout_marginStart="15dp"
+            android:layout_marginTop="24.5dp"
             android:layout_marginEnd="8dp"
+            android:background="@drawable/small_cancel"
             android:onClick="resetCrop"
-            android:text="Reset"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

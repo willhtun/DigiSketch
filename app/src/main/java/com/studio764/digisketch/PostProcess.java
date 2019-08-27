@@ -23,6 +23,7 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
+import android.widget.TextView;
 
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
@@ -39,7 +40,6 @@ public class PostProcess extends AppCompatActivity {
 
     private int seekValue_at_preview = 1;
     private int seekValue_at = 1;
-    private int seekValue_canny = 1;
 
     private boolean cropped = false;
     private Rect croppedRect;
@@ -49,9 +49,13 @@ public class PostProcess extends AppCompatActivity {
     private ImageView crop_3;
     private ImageView crop_4;
 
+    int cropped_height;
+    int cropped_width;
+    int starting_y;
     private float scalingFactor;
 
     private ProgressBar progressBar;
+    private TextView progressText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,9 +68,9 @@ public class PostProcess extends AppCompatActivity {
         String img_path = getIntent().getStringExtra("img_path");
 
         try {
-            int cropped_height = getIntent().getIntExtra("jpeg_height", 0);
-            int cropped_width = getIntent().getIntExtra("jpeg_width", 0);
-            int starting_y = getIntent().getIntExtra("starting_y", 0);
+            cropped_height = getIntent().getIntExtra("jpeg_height", 0);
+            cropped_width = getIntent().getIntExtra("jpeg_width", 0);
+            starting_y = getIntent().getIntExtra("starting_y", 0);
             scalingFactor = getIntent().getFloatExtra("scaling_factor", 0f);
 
             String[] params = {img_path,
@@ -100,6 +104,7 @@ public class PostProcess extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         progressBar = findViewById(R.id.camera_progressBar);
+        progressText = findViewById(R.id.camera_progressText);
     }
 
     private void setUpSeekBar() {
@@ -122,32 +127,10 @@ public class PostProcess extends AppCompatActivity {
                 ((ImageView) findViewById(R.id.image_viewer)).setImageBitmap(final_bitmap_array[seekValue_at_preview]);
             }
         });
-
-        SeekBar seek_canny = (SeekBar) findViewById(R.id.process_seekbar_canny);
-        seek_canny.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                // TODO Auto-generated method stub
-
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-                // TODO Auto-generated method stub
-            }
-
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                seekValue_canny = seekBar.getProgress();
-                //((ImageView) findViewById(R.id.image_viewer)).setImageBitmap(final_bitmap_array[seekValue_at]);
-            }
-        });
     }
 
     // Cropping ====================================================================================
     public void punchHole(float x, float y, float w, float h) {
-        Log.d("punch_test", x + " : " + y + " : " + w + " : " + h );
         Bitmap mask = Bitmap.createBitmap(findViewById(R.id.image_viewer).getWidth(), findViewById(R.id.image_viewer).getHeight(), Bitmap.Config.ARGB_8888);
         mask.eraseColor(android.graphics.Color.argb(175, 0, 0, 0));
         Canvas canvas = new Canvas(mask);
@@ -177,10 +160,11 @@ public class PostProcess extends AppCompatActivity {
                     case MotionEvent.ACTION_MOVE:
                         int x_cord = (int) event.getRawX();
                         int y_cord = (int) event.getRawY();
-
+                        
                         if (x_cord > windowwidth) x_cord = windowwidth;
                         if (x_cord < windowLeftBorder) x_cord = windowLeftBorder;
                         if (y_cord > windowheight) y_cord = windowheight;
+
 
                         layoutParams1.leftMargin = x_cord - 50;
                         layoutParams1.topMargin = y_cord - 150;
@@ -410,12 +394,21 @@ public class PostProcess extends AppCompatActivity {
             Bitmap saveBmp;
             if (cropped)
                 saveBmp = Bitmap.createBitmap(final_bitmap_array[seekValue_at],
-                                                (int) (croppedRect.left * scalingFactor),
+                                                (int) (croppedRect.left * scalingFactor) + starting_y,
                                                 (int) (croppedRect.top * scalingFactor),
                                                 (int) (croppedRect.width() * scalingFactor),
                                                 (int) (croppedRect.height() * scalingFactor));
-            else
-                saveBmp = Bitmap.createBitmap(final_bitmap_array[seekValue_at]);
+
+            else {
+                int[] pixels = new int[cropped_width * (cropped_height-starting_y)];
+                final_bitmap_array[seekValue_at].getPixels(pixels, 0, cropped_height - starting_y, starting_y, 0, cropped_height - starting_y - starting_y, cropped_width);
+                saveBmp = Bitmap.createBitmap(pixels,
+                                                0,
+                                                cropped_height - starting_y,
+                                                cropped_height - starting_y - starting_y,
+                                                cropped_width,
+                                                Bitmap.Config.ARGB_8888);
+            }
 
             saveBmp.compress(Bitmap.CompressFormat.PNG, 100, out);
         } catch (FileNotFoundException e) {
@@ -486,6 +479,11 @@ public class PostProcess extends AppCompatActivity {
                     .setListener(null);
             progressBar.setVisibility(View.VISIBLE);
             progressBar.animate()
+                    .alpha(0f)
+                    .setDuration(300)
+                    .setListener(null);
+            progressText.setVisibility(View.VISIBLE);
+            progressText.animate()
                     .alpha(0f)
                     .setDuration(300)
                     .setListener(null);

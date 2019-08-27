@@ -32,6 +32,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -75,6 +76,7 @@ public class Camera extends AppCompatActivity {
     private int jpegHeight;
     private boolean flashMode;
     private ProgressBar progressBar;
+    private TextView progressText;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -213,6 +215,13 @@ public class Camera extends AppCompatActivity {
                     .setStartDelay(500)
                     .setDuration(300)
                     .setListener(null);
+            progressText.setAlpha(0f);
+            progressText.setVisibility(View.VISIBLE);
+            progressText.animate()
+                    .alpha(1f)
+                    .setStartDelay(500)
+                    .setDuration(300)
+                    .setListener(null);
 
             ImageReader.OnImageAvailableListener readerListener = new ImageReader.OnImageAvailableListener() {
                 @Override
@@ -227,10 +236,16 @@ public class Camera extends AppCompatActivity {
 
                         //4032:3024 -> 4032:2367
                         //1038:1768
+                        int cropped_height = jpegHeight;
+                        int cropped_width = jpegWidth;
+                        int new_height = (int) (((double) textureView.getWidth() / textureView.getHeight()) * cropped_width);
+                        int starting_y = (cropped_height - new_height) / 2; // 3024 - 1038 / 2
+                        float scaling_factor = (float) cropped_width / findViewById(R.id.image_wrapper).getHeight();
+
                         progressBar.setProgress(5);
                         String cached_path = save(bytes);
                         progressBar.setProgress(15);
-                        openPostProcessActivity(cached_path, jpegHeight, jpegWidth, 0, 0);
+                        openPostProcessActivity(cached_path, jpegHeight, jpegWidth, starting_y, scaling_factor);
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
                     } catch (IOException e) {
@@ -384,6 +399,8 @@ public class Camera extends AppCompatActivity {
         findViewById(R.id.camera_captureFlicker).setVisibility(View.INVISIBLE);
         progressBar = findViewById(R.id.camera_progressBar);
         progressBar.setVisibility(View.INVISIBLE);
+        progressText = findViewById(R.id.camera_progressText);
+        progressText.setVisibility(View.INVISIBLE);
     }
     @Override
     protected void onPause() {

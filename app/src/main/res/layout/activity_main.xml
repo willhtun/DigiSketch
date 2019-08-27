@@ -13,7 +13,7 @@
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="32dp"
-        android:background="@drawable/rounded_button_background"
+        android:background="@drawable/long_button"
         android:onClick="openCameraActivity"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_camera_icon"

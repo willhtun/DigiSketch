@@ -32,8 +32,8 @@
             android:id="@+id/camera_captureFlicker"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:visibility="invisible"
             android:background="#000000"
+            android:visibility="invisible"
             app:layout_constraintBottom_toBottomOf="@+id/texture"
             app:layout_constraintEnd_toEndOf="@+id/texture"
             app:layout_constraintStart_toStartOf="@+id/texture"
@@ -43,12 +43,12 @@
             android:id="@+id/camera_captureProcess"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:background="#CA3333"
-            android:visibility="invisible"
+            android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="@+id/texture"
             app:layout_constraintEnd_toEndOf="@+id/texture"
             app:layout_constraintStart_toStartOf="@+id/texture"
-            app:layout_constraintTop_toTopOf="@+id/texture" />
+            app:layout_constraintTop_toTopOf="@+id/texture"
+            app:srcCompat="@drawable/processing_background" />
 
         <ProgressBar
             android:id="@+id/camera_progressBar"
@@ -63,6 +63,17 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/camera_progressText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="Processing..."
+            android:textColor="#5C5C5C"
+            app:layout_constraintBottom_toTopOf="@+id/camera_progressBar"
+            app:layout_constraintEnd_toEndOf="@+id/camera_progressBar"
+            app:layout_constraintStart_toStartOf="@+id/camera_progressBar" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -87,7 +98,7 @@
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="32dp"
-        android:background="@drawable/rounded_button_background"
+        android:background="@drawable/long_button"
         android:textSize="12sp"
         android:transitionName="cameraButtonTransition"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -96,8 +107,8 @@
 
     <ImageButton
         android:id="@+id/btn_flash_off"
-        android:layout_width="76dp"
-        android:layout_height="76dp"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
         android:layout_marginStart="32dp"
         android:background="#00FFFFFF"
         android:onClick="toggleFlashOn"
@@ -110,8 +121,8 @@
 
     <ImageButton
         android:id="@+id/btn_flash_on"
-        android:layout_width="76dp"
-        android:layout_height="76dp"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
         android:layout_marginStart="32dp"
         android:background="#00FFFFFF"
         android:onClick="toggleFlashOff"
