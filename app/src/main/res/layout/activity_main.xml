@@ -6,44 +6,72 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <ImageView
+        android:id="@+id/main_bg"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:scaleType="centerCrop"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/bg" />
+
     <ImageButton
         android:id="@+id/Button_Camera"
-        android:layout_width="400px"
-        android:layout_height="200px"
+        android:layout_width="150dp"
+        android:layout_height="80dp"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="32dp"
-        android:background="@drawable/long_button"
+        android:background="@drawable/long_button_white"
         android:onClick="openCameraActivity"
+        android:padding="20dp"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_camera_icon"
-        android:padding="20dp"
         android:transitionName="cameraButtonTransition"
+        android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <Button
-        android:id="@+id/Button_GoogleDrive"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    <ImageButton
+        android:id="@+id/Button_Dropbox"
+        android:layout_width="65dp"
+        android:layout_height="65dp"
         android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="32dp"
-        android:text="Google Drive"
-        app:layout_constraintBottom_toTopOf="@+id/Button_Camera"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:background="@drawable/long_button_white"
+        android:padding="15dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_dropbox_gray"
+        android:text="Drop Box"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="@+id/space"
+        app:layout_constraintStart_toEndOf="@+id/space"
+        app:layout_constraintTop_toTopOf="@+id/space" />
 
-    <TextView
-        android:id="@+id/Text_GoogleDriveStatus"
+    <ImageButton
+        android:id="@+id/Button_GoogleDrive"
+        android:layout_width="65dp"
+        android:layout_height="65dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/long_button_white"
+        android:padding="15dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_drive_gray"
+        android:text="Google Drive"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="@+id/space"
+        app:layout_constraintEnd_toStartOf="@+id/space"
+        app:layout_constraintTop_toTopOf="@+id/space" />
+
+    <Space
+        android:id="@+id/space"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="32dp"
-        android:layout_marginEnd="8dp"
-        android:text="TextView"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:layout_marginBottom="64dp"
+        app:layout_constraintBottom_toTopOf="@+id/Button_Camera"
+        app:layout_constraintEnd_toEndOf="@+id/Button_Camera"
+        app:layout_constraintStart_toStartOf="@+id/Button_Camera" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

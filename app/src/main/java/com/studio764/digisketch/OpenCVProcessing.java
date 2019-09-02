@@ -3,12 +3,15 @@ package com.studio764.digisketch;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
+import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.CLAHE;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.opencv.core.CvType.CV_8U;
 
 public class OpenCVProcessing {
     public static Mat process1_contrast(Mat img_temp) {
@@ -67,7 +70,34 @@ public class OpenCVProcessing {
             // TODO remove if final image clean up is added
             Core.bitwise_not(img_sub_array[i], img_sub_array[i]);
         }
+
         return img_sub_array;
+    }
+
+    public static Mat[] process6_postprocess(Mat[] img_sub_array) {
+        Mat[] final_img_array = new Mat[3];
+        for (int ii = 0; ii < 3; ii++) {
+            Mat output = new Mat();
+            Mat stats = new Mat();
+            Mat centroids = new Mat();
+            int nb_components = Imgproc.connectedComponentsWithStats(img_sub_array[ii], output, stats, centroids, 8);
+            List<Integer> sizes = new ArrayList<>();
+            int buff[] = new int[(int) stats.total() * stats.channels()];
+            for (int i = 2; i < stats.rows(); i++) {
+                sizes.add((int) (stats.get(i,2)[0] * stats.get(i,3)[0]));
+            }
+            int min_size = 50;
+            Mat img_final = new Mat(img_sub_array[ii].rows(), img_sub_array[ii].height(), CV_8U, Scalar.all(255));
+            for (int i = 1; i < nb_components - 2; i++) {
+                if (sizes.get(i) >= min_size) {
+                    Core.compare(img_final, new Scalar(i), img_final, Core.CMP_EQ);
+                }
+            }
+
+            Core.bitwise_not(img_final, img_final);
+            final_img_array[ii] = img_final;
+        }
+        return final_img_array;
     }
 
     public static Mat[] process(Mat img) {
@@ -104,7 +134,6 @@ public class OpenCVProcessing {
             Core.bitwise_not(img_at_array[i], img_at_array[i]);
         }
 
-
         // Image Subtraction To Remove Outlier Noises
         Mat img_sub_00 = new Mat();
         Mat img_sub_01 = new Mat();
@@ -117,9 +146,9 @@ public class OpenCVProcessing {
         }
 
         // Final Image Clean Up
-        /*
-        Mat[] final_img_array = new Mat[5];
-        for (int ii = 0; ii < 5; ii++) {
+
+        Mat[] final_img_array = new Mat[3];
+        for (int ii = 0; ii < 3; ii++) {
             Mat output = new Mat();
             Mat stats = new Mat();
             Mat centroids = new Mat();
@@ -131,17 +160,20 @@ public class OpenCVProcessing {
             }
             int min_size = 50;
             Mat img_final = new Mat(img_sub_array[ii].rows(), img_sub_array[ii].height(), CV_8U, Scalar.all(0));
+            /*
             for (int i = 0; i < nb_components - 2; i++) {
                 if (sizes.get(i) >= min_size) {
                     Core.compare(output, new Scalar(i + 2), img_final, Core.CMP_EQ);
                 }
             }
+            */
+
             Core.bitwise_not(img_final, img_final);
             final_img_array[ii] = img_final;
         }
-        */
+
 
         // Return
-        return img_sub_array;
+        return final_img_array;
     }
 }

@@ -23,6 +23,7 @@ import android.media.ImageReader;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Parcelable;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
@@ -30,6 +31,7 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -38,6 +40,9 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+
+import com.dropbox.core.v2.DbxClientV2;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -51,8 +56,18 @@ import java.util.List;
 
 public class Camera extends AppCompatActivity {
     private static final String TAG = "AndroidCameraApi";
+
     private Button takePictureButton;
     private TextureView textureView;
+    private ImageView cam_flicker;
+    private ImageView cam_processing;
+    private ImageButton flash_on;
+    private ImageButton flash_off;
+
+    private GoogleSignInAccount google_account;
+    private DriveServiceHelper mDriveServiceHelper;
+    private String dropbox_authToken;
+
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
@@ -94,6 +109,11 @@ public class Camera extends AppCompatActivity {
                 takePicture();
             }
         });
+
+        google_account = getIntent().getParcelableExtra("googleAccount");
+        mDriveServiceHelper = getIntent().getParcelableExtra("googleServiceHelper");
+        dropbox_authToken = getIntent().getStringExtra("dropboxAuthToken");
+        Log.d("drop_test", "auth:" + dropbox_authToken);
 
         flashMode = false;
     }
@@ -157,12 +177,11 @@ public class Camera extends AppCompatActivity {
         }
     }
     protected void takePicture() {
-        ImageView cameraCapture = findViewById(R.id.camera_captureFlicker);
-        cameraCapture.setVisibility(View.VISIBLE);
-        cameraCapture.postDelayed(new Runnable() {
+        cam_flicker.setVisibility(View.VISIBLE);
+        cam_flicker.postDelayed(new Runnable() {
             @Override
             public void run() {
-                findViewById(R.id.camera_captureFlicker).setVisibility(View.INVISIBLE);
+                cam_flicker.setVisibility(View.INVISIBLE);
             }
         }, 100);
 
@@ -170,6 +189,9 @@ public class Camera extends AppCompatActivity {
             Log.e(TAG, "cameraDevice is null");
             return;
         }
+
+        takePictureButton.setEnabled(false);
+
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         try {
             CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraDevice.getId());
@@ -200,10 +222,9 @@ public class Camera extends AppCompatActivity {
             //final File file = new File(Environment.getExternalStorageDirectory()+"/pic.jpg");
             final File file = new File(this.getCacheDir()+"/cached_pic.jpg");
 
-            ImageView process = findViewById(R.id.camera_captureProcess);
-            process.setAlpha(0f);
-            process.setVisibility(View.VISIBLE);
-            process.animate()
+            cam_processing.setAlpha(0f);
+            cam_processing.setVisibility(View.VISIBLE);
+            cam_processing.animate()
                     .alpha(1f)
                     .setStartDelay(500)
                     .setDuration(300)
@@ -245,7 +266,7 @@ public class Camera extends AppCompatActivity {
                         progressBar.setProgress(5);
                         String cached_path = save(bytes);
                         progressBar.setProgress(15);
-                        openPostProcessActivity(cached_path, jpegHeight, jpegWidth, starting_y, scaling_factor);
+                        openPostProcessActivity(cached_path, jpegHeight, jpegWidth, starting_y, scaling_factor, flashMode);
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
                     } catch (IOException e) {
@@ -391,32 +412,44 @@ public class Camera extends AppCompatActivity {
         startBackgroundThread();
         if (textureView.isAvailable()) {
             openCameraWithHandlerThread();
-        } else {
+        }
+        else {
             textureView.setSurfaceTextureListener(textureListener);
         }
 
-        findViewById(R.id.camera_captureProcess).setVisibility(View.INVISIBLE);
-        findViewById(R.id.camera_captureFlicker).setVisibility(View.INVISIBLE);
+        cam_flicker = findViewById(R.id.camera_captureFlicker);
         progressBar = findViewById(R.id.camera_progressBar);
-        progressBar.setVisibility(View.INVISIBLE);
         progressText = findViewById(R.id.camera_progressText);
+        cam_processing = findViewById(R.id.camera_captureProcess);
+        flash_on = findViewById(R.id.btn_flash_on);
+        flash_off = findViewById(R.id.btn_flash_off);
+
+        cam_flicker.setVisibility(View.INVISIBLE);
+        progressBar.setVisibility(View.INVISIBLE);
         progressText.setVisibility(View.INVISIBLE);
+        cam_processing.setVisibility(View.INVISIBLE);
+        takePictureButton.setEnabled(true);
     }
+
     @Override
     protected void onPause() {
         Log.e(TAG, "onPause");
-        //closeCamera();
         stopBackgroundThread();
         super.onPause();
     }
 
-    public void openPostProcessActivity(String img_path, int jpg_h, int jpg_w, int start_y, float scale) {
+    public void openPostProcessActivity(String img_path, int jpg_h, int jpg_w, int start_y, float scale, boolean flash) {
         Intent intent = new Intent(this , PostProcess.class);
         intent.putExtra("img_path", img_path);
         intent.putExtra("jpeg_height", jpg_h);
         intent.putExtra("jpeg_width", jpg_w);
         intent.putExtra("starting_y", start_y);
         intent.putExtra("scaling_factor", scale);
+        intent.putExtra("flash", flash);
+        intent.putExtra("account", google_account);
+        intent.putExtra("googleServiceHelper", (Parcelable) mDriveServiceHelper);
+        intent.putExtra("dropboxAuthToken", dropbox_authToken);
+
         intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
 
         startActivity(intent);
@@ -425,14 +458,14 @@ public class Camera extends AppCompatActivity {
     //=================
     public void toggleFlashOn(View view) {
         flashMode = true;
-        findViewById(R.id.btn_flash_on).setVisibility(View.VISIBLE);
-        findViewById(R.id.btn_flash_off).setVisibility(View.INVISIBLE);
+        flash_on.setVisibility(View.VISIBLE);
+        flash_off.setVisibility(View.INVISIBLE);
     }
 
     public void toggleFlashOff(View view) {
         flashMode = false;
-        findViewById(R.id.btn_flash_on).setVisibility(View.INVISIBLE);
-        findViewById(R.id.btn_flash_off).setVisibility(View.VISIBLE);
+        flash_on.setVisibility(View.INVISIBLE);
+        flash_off.setVisibility(View.VISIBLE);
     }
 
     //=================
