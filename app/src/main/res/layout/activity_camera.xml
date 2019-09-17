@@ -5,7 +5,7 @@
     android:id="@+id/constraintLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/background_light"
+    android:background="#F5F3E3"
     tools:context=".Camera">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -14,20 +14,21 @@
         android:layout_height="0dp"
         android:layout_alignParentTop="true"
         android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
         android:layout_marginEnd="8dp"
-        android:layout_marginBottom="32dp"
+        android:layout_marginBottom="16dp"
         android:background="@drawable/texture_prerender_background"
         app:layout_constraintBottom_toTopOf="@+id/btn_takepicture"
+        app:layout_constraintDimensionRatio="H,3:4"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintStart_toStartOf="parent">
 
         <TextureView
             android:id="@+id/texture"
-            android:layout_width="match_parent"
+            android:layout_width="100dp"
             android:layout_height="match_parent"
-            android:layout_alignParentTop="true" />
+            android:layout_alignParentTop="true"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
 
         <ImageView
             android:id="@+id/camera_captureFlicker"
@@ -53,13 +54,14 @@
 
         <ProgressBar
             android:id="@+id/camera_progressBar"
-            style="?android:attr/progressBarStyleHorizontal"
+            style="@style/Widget.AppCompat.ProgressBar.Horizontal"
             android:layout_width="0dp"
-            android:layout_height="5dp"
+            android:layout_height="7dp"
             android:layout_marginStart="96dp"
             android:layout_marginEnd="96dp"
             android:max="100"
-            android:progress="20"
+            android:progress="28"
+            android:progressDrawable="@drawable/progressbar"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -70,8 +72,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
+            android:fontFamily="sans-serif-light"
             android:text="Processing..."
-            android:textColor="#5C5C5C"
+            android:textColor="#DDDDDD"
+            android:textSize="15sp"
+            android:visibility="visible"
             app:layout_constraintBottom_toTopOf="@+id/camera_progressBar"
             app:layout_constraintEnd_toEndOf="@+id/camera_progressBar"
             app:layout_constraintStart_toStartOf="@+id/camera_progressBar" />
@@ -83,13 +88,13 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_alignParentTop="true"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="8dp"
         android:background="@drawable/rounded_camera_mask"
         android:visibility="visible"
         app:layout_constraintBottom_toTopOf="@+id/btn_takepicture"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="@+id/image_wrapper" />
 
     <Button
         android:id="@+id/btn_takepicture"
@@ -98,7 +103,7 @@
         android:layout_height="76dp"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
-        android:layout_marginBottom="32dp"
+        android:layout_marginBottom="16dp"
         android:background="@drawable/long_button"
         android:textSize="12sp"
         android:transitionName="cameraButtonTransition"

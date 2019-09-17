@@ -8,9 +8,9 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.media.Image;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.util.Log;
@@ -18,6 +18,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -39,6 +40,9 @@ import com.google.api.services.drive.DriveScopes;
 public class MainActivity extends AppCompatActivity {
 
     private int REQUEST_CODE_SIGN_IN = 100;
+
+    private boolean inSettings = false;
+    private boolean firstStartUp = true;
 
     // Connection
     boolean isConnected;
@@ -64,6 +68,13 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.Button_Camera).setVisibility(View.INVISIBLE);
         findViewById(R.id.Button_GoogleDrive).setVisibility(View.INVISIBLE);
         findViewById(R.id.Button_Dropbox).setVisibility(View.INVISIBLE);
+        findViewById(R.id.Button_Settings).setVisibility(View.INVISIBLE);
+
+        SharedPreferences pref = getApplicationContext().getSharedPreferences("MyPref", 0); // 0 - for private mode
+        SharedPreferences.Editor editor = pref.edit();
+        int launch = pref.getInt("app_launchTimes", 0);
+        editor.putInt("app_launchTimes", launch + 1);
+        editor.commit();
     }
 
     @Override
@@ -91,13 +102,22 @@ public class MainActivity extends AppCompatActivity {
         dropbox_onResumeHandler();
     }
 
+    @Override
+    public void onBackPressed() {
+        if (inSettings) {
+            openSettings(findViewById(R.id.Button_Settings));
+        }
+        else {
+            finish();
+        }
+    }
+
     public void openCameraActivity(View view) {
         Intent intent = new Intent(this, Camera.class);
         ActivityOptionsCompat options = ActivityOptionsCompat.
                 makeSceneTransitionAnimation(this, findViewById(R.id.Button_Camera), "cameraButtonTransition");
         intent.putExtra("googleAccount", google_account);
         intent.putExtra("dropboxAuthToken", dropbox_authToken);
-        Log.d("drop_test", "put:" + dropbox_authToken);
 
         startActivity(intent, options.toBundle());
     }
@@ -113,28 +133,45 @@ public class MainActivity extends AppCompatActivity {
         else
             ((ImageButton) findViewById(R.id.Button_Dropbox)).setImageResource(R.drawable.ic_dropbox);
 
-        ImageView btn_cam = findViewById(R.id.Button_Camera);
-        btn_cam.setAlpha(0f);
-        btn_cam.setVisibility(View.VISIBLE);
-        btn_cam.animate()
-                .alpha(1f)
-                .setDuration(300)
-                .setListener(null);
-        ImageView btn_drive = findViewById(R.id.Button_GoogleDrive);
-        btn_drive.setAlpha(0f);
-        btn_drive.setVisibility(View.VISIBLE);
-        btn_drive.animate()
-                .alpha(1f)
-                .setDuration(300)
-                .setListener(null);
-        ImageView btn_drop = findViewById(R.id.Button_Dropbox);
-        btn_drop.setAlpha(0f);
-        btn_drop
-                .setVisibility(View.VISIBLE);
-        btn_drop.animate()
-                .alpha(1f)
-                .setDuration(300)
-                .setListener(null);
+        if (!inSettings) {
+            if (firstStartUp) {
+                ImageView btn_cam = findViewById(R.id.Button_Camera);
+                btn_cam.setAlpha(0f);
+                btn_cam.setVisibility(View.VISIBLE);
+                btn_cam.animate()
+                        .alpha(1f)
+                        .setDuration(300)
+                        .setListener(null);
+                ImageView btn_drive = findViewById(R.id.Button_GoogleDrive);
+                btn_drive.setAlpha(0f);
+                btn_drive.setVisibility(View.VISIBLE);
+                btn_drive.animate()
+                        .alpha(1f)
+                        .setDuration(300)
+                        .setListener(null);
+                ImageView btn_drop = findViewById(R.id.Button_Dropbox);
+                btn_drop.setAlpha(0f);
+                btn_drop.setVisibility(View.VISIBLE);
+                btn_drop.animate()
+                        .alpha(1f)
+                        .setDuration(300)
+                        .setListener(null);
+                ImageView btn_settings = findViewById(R.id.Button_Settings);
+                btn_settings.setAlpha(0f);
+                btn_settings.setVisibility(View.VISIBLE);
+                btn_settings.animate()
+                        .alpha(1f)
+                        .setDuration(300)
+                        .setListener(null);
+                firstStartUp = false;
+            }
+            else {
+                findViewById(R.id.Button_Camera).setVisibility(View.VISIBLE);
+                findViewById(R.id.Button_GoogleDrive).setVisibility(View.VISIBLE);
+                findViewById(R.id.Button_Dropbox).setVisibility(View.VISIBLE);
+                findViewById(R.id.Button_Settings).setVisibility(View.VISIBLE);
+            }
+        }
     }
 
     private void checkInternet() {
@@ -277,6 +314,10 @@ public class MainActivity extends AppCompatActivity {
             dropbox_client.auth().tokenRevoke();
             dropbox_account = null;
             dropbox_authToken = null;
+            SharedPreferences pref = getApplicationContext().getSharedPreferences("MyPref", 0); // 0 - for private mode
+            SharedPreferences.Editor editor = pref.edit();
+            editor.putString("dropbox_authToken", null);
+            editor.commit();
         } catch (DbxApiException e) {
             e.printStackTrace();
         } catch (DbxException e) {
@@ -329,5 +370,88 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
+    }
+
+    public void openSettings(View view) {
+        if (!inSettings) {
+            LinearLayout settings = findViewById(R.id.settings);
+            settings.setAlpha(0f);
+            settings.setVisibility(View.VISIBLE);
+            settings.animate()
+                    .alpha(1f)
+                    .setDuration(300)
+                    .setListener(null);
+            ImageButton btn_cam = findViewById(R.id.Button_Camera);
+            btn_cam.setAlpha(1f);
+            btn_cam.setVisibility(View.VISIBLE);
+            btn_cam.animate()
+                    .alpha(0f)
+                    .setDuration(300)
+                    .setListener(null);
+            btn_cam.setEnabled(false);
+            ImageButton btn_drive = findViewById(R.id.Button_GoogleDrive);
+            btn_drive.setAlpha(1f);
+            btn_drive.setVisibility(View.VISIBLE);
+            btn_drive.animate()
+                    .alpha(0f)
+                    .setDuration(300)
+                    .setListener(null);
+            btn_drive.setEnabled(false);
+            ImageButton btn_drop = findViewById(R.id.Button_Dropbox);
+            btn_drop.setAlpha(1f);
+            btn_drop.setVisibility(View.VISIBLE);
+            btn_drop.animate()
+                    .alpha(0f)
+                    .setDuration(300)
+                    .setListener(null);
+            btn_drop.setEnabled(false);
+
+            ((ImageButton) findViewById(R.id.Button_Settings)).setImageResource(R.drawable.ic_back);
+            inSettings = true;
+        }
+        else {
+            LinearLayout settings = findViewById(R.id.settings);
+            settings.setAlpha(1f);
+            settings.setVisibility(View.VISIBLE);
+            settings.animate()
+                    .alpha(0f)
+                    .setDuration(300)
+                    .setListener(null);
+            ImageButton btn_cam = findViewById(R.id.Button_Camera);
+            btn_cam.setAlpha(0f);
+            btn_cam.setVisibility(View.VISIBLE);
+            btn_cam.animate()
+                    .alpha(1f)
+                    .setDuration(300)
+                    .setListener(null);
+            btn_cam.setEnabled(true);
+            ImageButton btn_drive = findViewById(R.id.Button_GoogleDrive);
+            btn_drive.setAlpha(0f);
+            btn_drive.setVisibility(View.VISIBLE);
+            btn_drive.animate()
+                    .alpha(1f)
+                    .setDuration(300)
+                    .setListener(null);
+            btn_drive.setEnabled(true);
+            ImageButton btn_drop = findViewById(R.id.Button_Dropbox);
+            btn_drop.setAlpha(0f);
+            btn_drop.setVisibility(View.VISIBLE);
+            btn_drop.animate()
+                    .alpha(1f)
+                    .setDuration(300)
+                    .setListener(null);
+            btn_drop.setEnabled(true);
+
+            ((ImageButton) findViewById(R.id.Button_Settings)).setImageResource(R.drawable.ic_settings);
+            inSettings = false;
+        }
+    }
+
+    public void openFeedback(View view) {
+        String url = "https://forms.gle/Qp8Ezbsov9B7Eaq58";
+
+        Intent i = new Intent(Intent.ACTION_VIEW);
+        i.setData(Uri.parse(url));
+        startActivity(i);
     }
 }

@@ -1,8 +1,12 @@
 package com.studio764.digisketch;
 
+import android.graphics.Color;
+import android.util.Log;
+
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.CLAHE;
@@ -75,29 +79,32 @@ public class OpenCVProcessing {
     }
 
     public static Mat[] process6_postprocess(Mat[] img_sub_array) {
-        Mat[] final_img_array = new Mat[3];
         for (int ii = 0; ii < 3; ii++) {
             Mat output = new Mat();
             Mat stats = new Mat();
             Mat centroids = new Mat();
-            int nb_components = Imgproc.connectedComponentsWithStats(img_sub_array[ii], output, stats, centroids, 8);
+            int nb_components = Imgproc.connectedComponentsWithStats(img_sub_array[ii], output, stats, centroids, 4);
             List<Integer> sizes = new ArrayList<>();
             int buff[] = new int[(int) stats.total() * stats.channels()];
-            for (int i = 2; i < stats.rows(); i++) {
-                sizes.add((int) (stats.get(i,2)[0] * stats.get(i,3)[0]));
+            for (int i = 1; i < stats.rows(); i++) {
+                sizes.add((int) (stats.get(i,4)[0]));
             }
             int min_size = 50;
-            Mat img_final = new Mat(img_sub_array[ii].rows(), img_sub_array[ii].height(), CV_8U, Scalar.all(255));
-            for (int i = 1; i < nb_components - 2; i++) {
-                if (sizes.get(i) >= min_size) {
-                    Core.compare(img_final, new Scalar(i), img_final, Core.CMP_EQ);
+
+            for (int i = 1; i < nb_components; i++) {
+                if (stats.get(i,4)[0] < min_size) {
+                    Imgproc.rectangle(img_sub_array[ii],
+                                        new Rect(((int) stats.get(i,0)[0]),
+                                                ((int) stats.get(i,1)[0]),
+                                                ((int) stats.get(i,2)[0]),
+                                                ((int) stats.get(i,3)[0])),
+                                        new Scalar(150),
+                                        100);
                 }
             }
 
-            Core.bitwise_not(img_final, img_final);
-            final_img_array[ii] = img_final;
         }
-        return final_img_array;
+        return img_sub_array;
     }
 
     public static Mat[] process(Mat img) {

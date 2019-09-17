@@ -18,6 +18,7 @@ import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.ExifInterface;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Bundle;
@@ -27,9 +28,11 @@ import android.os.Parcelable;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
+import android.util.TimingLogger;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -39,17 +42,23 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.core.app.ActivityCompat;
 
 import com.dropbox.core.v2.DbxClientV2;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.api.client.util.DateTime;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.sql.Time;
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -89,9 +98,14 @@ public class Camera extends AppCompatActivity {
     private HandlerThread mBackgroundThread;
     private int jpegWidth;
     private int jpegHeight;
+    private int starting_y;
+    private float scaling_factor;
+
     private boolean flashMode;
     private ProgressBar progressBar;
     private TextView progressText;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -113,7 +127,6 @@ public class Camera extends AppCompatActivity {
         google_account = getIntent().getParcelableExtra("googleAccount");
         mDriveServiceHelper = getIntent().getParcelableExtra("googleServiceHelper");
         dropbox_authToken = getIntent().getStringExtra("dropboxAuthToken");
-        Log.d("drop_test", "auth:" + dropbox_authToken);
 
         flashMode = false;
     }
@@ -194,17 +207,16 @@ public class Camera extends AppCompatActivity {
 
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         try {
+
             CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraDevice.getId());
             Size[] jpegSizes = null;
             if (characteristics != null) {
                 jpegSizes = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(ImageFormat.JPEG);
             }
-            jpegWidth = 640;
-            jpegHeight = 480;
-            if (jpegSizes != null && 0 < jpegSizes.length) {
-                jpegWidth = jpegSizes[0].getWidth();
-                jpegHeight = jpegSizes[0].getHeight();
-            }
+            Size bestsize = getBestSize(jpegSizes);
+            jpegWidth = bestsize.getWidth();
+            jpegHeight = bestsize.getHeight();
+
             ImageReader reader = ImageReader.newInstance(jpegWidth, jpegHeight, ImageFormat.JPEG, 1);
             List<Surface> outputSurfaces = new ArrayList<Surface>(2);
             outputSurfaces.add(reader.getSurface());
@@ -217,7 +229,8 @@ public class Camera extends AppCompatActivity {
                 captureBuilder.set(CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_SINGLE);
             // Orientation
             final int rotation = getWindowManager().getDefaultDisplay().getRotation();
-            captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
+            //captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
+            captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, manager.getCameraCharacteristics(cameraId).get(CameraCharacteristics.SENSOR_ORIENTATION));
             captureBuilder.set(CaptureRequest.JPEG_QUALITY, (byte) 80);
             //final File file = new File(Environment.getExternalStorageDirectory()+"/pic.jpg");
             final File file = new File(this.getCacheDir()+"/cached_pic.jpg");
@@ -226,22 +239,22 @@ public class Camera extends AppCompatActivity {
             cam_processing.setVisibility(View.VISIBLE);
             cam_processing.animate()
                     .alpha(1f)
-                    .setStartDelay(500)
-                    .setDuration(300)
+                    .setStartDelay(200)
+                    .setDuration(200)
                     .setListener(null);
             progressBar.setAlpha(0f);
             progressBar.setVisibility(View.VISIBLE);
             progressBar.animate()
                     .alpha(1f)
-                    .setStartDelay(500)
-                    .setDuration(300)
+                    .setStartDelay(200)
+                    .setDuration(200)
                     .setListener(null);
             progressText.setAlpha(0f);
             progressText.setVisibility(View.VISIBLE);
             progressText.animate()
                     .alpha(1f)
-                    .setStartDelay(500)
-                    .setDuration(300)
+                    .setStartDelay(200)
+                    .setDuration(200)
                     .setListener(null);
 
             ImageReader.OnImageAvailableListener readerListener = new ImageReader.OnImageAvailableListener() {
@@ -253,20 +266,41 @@ public class Camera extends AppCompatActivity {
                         ByteBuffer buffer = image.getPlanes()[0].getBuffer();
                         byte[] bytes = new byte[buffer.capacity()];
                         buffer.get(bytes);
-                        final Bitmap bitmapImage = RotateBitmap(BitmapFactory.decodeByteArray(bytes, 0, bytes.length, null), 90);
-
                         //4032:3024 -> 4032:2367
                         //1038:1768
                         int cropped_height = jpegHeight;
                         int cropped_width = jpegWidth;
                         int new_height = (int) (((double) textureView.getWidth() / textureView.getHeight()) * cropped_width);
-                        int starting_y = (cropped_height - new_height) / 2; // 3024 - 1038 / 2
-                        float scaling_factor = (float) cropped_width / findViewById(R.id.image_wrapper).getHeight();
 
                         progressBar.setProgress(5);
                         String cached_path = save(bytes);
                         progressBar.setProgress(15);
-                        openPostProcessActivity(cached_path, jpegHeight, jpegWidth, starting_y, scaling_factor, flashMode);
+
+                        try {
+                            Thread.sleep(100);
+                        } catch (Exception e){
+                            e.printStackTrace();
+                        }
+
+                        // Rotate image
+                        // Find out if the picture needs rotating by looking at its Exif data
+                        ExifInterface exifInterface = new ExifInterface(new ByteArrayInputStream(bytes));
+                        int orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1);
+                        int rotationDegrees = 0;
+                        switch (orientation) {
+                            case ExifInterface.ORIENTATION_ROTATE_90:
+                                rotationDegrees = 90;
+                                break;
+                            case ExifInterface.ORIENTATION_ROTATE_180:
+                                rotationDegrees = 180;
+                                break;
+                            case ExifInterface.ORIENTATION_ROTATE_270:
+                                rotationDegrees = 270;
+                                break;
+                        }
+                        // Create and rotate the bitmap by rotationDegrees
+
+                        openPostProcessActivity(cached_path, jpegHeight, jpegWidth, starting_y, scaling_factor, flashMode, rotationDegrees);
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
                     } catch (IOException e) {
@@ -326,8 +360,39 @@ public class Camera extends AppCompatActivity {
         try {
             SurfaceTexture texture = textureView.getSurfaceTexture();
             assert texture != null;
-            Size imageDimension = getBestSize(sizes);
-            texture.setDefaultBufferSize(imageDimension.getWidth(), imageDimension.getHeight());
+            Size imageDimension = getBestSize(sizes); // 1.1513
+            Log.d("texture_test", "best size: w" + imageDimension.getWidth() + " h" + imageDimension.getHeight());
+            Log.d("texture_test", "wrapper size: w" + findViewById(R.id.image_wrapper).getWidth() + " h" + findViewById(R.id.image_wrapper).getHeight());
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    ConstraintLayout.LayoutParams cl = new ConstraintLayout.LayoutParams((int) (imageDimension.getHeight() * scaling_factor), ViewGroup.LayoutParams.MATCH_PARENT); // 1768, parent
+                    cl.leftToLeft = R.id.image_wrapper;
+                    cl.rightToRight = R.id.image_wrapper;
+                    textureView.setLayoutParams(cl);
+                }
+            });
+
+            jpegHeight = imageDimension.getWidth();
+            jpegWidth = imageDimension.getHeight();
+            scaling_factor = (float) findViewById(R.id.image_wrapper).getHeight()/imageDimension.getWidth();    //1.1513f;
+            Log.d("scaling_test", scaling_factor + ".");
+            Log.d("scaling_test", (imageDimension.getHeight() * scaling_factor) + ".");
+
+            starting_y = (jpegWidth - findViewById(R.id.image_wrapper).getWidth());
+            Log.d("_test_test", starting_y +"/");
+
+            float texture_ratio = (float)findViewById(R.id.image_wrapper).getWidth()/findViewById(R.id.image_wrapper).getHeight();
+            if (texture_ratio > 0.75) {
+                texture.setDefaultBufferSize((int) (imageDimension.getHeight() * 0.75f), imageDimension.getHeight());
+                starting_y = 0;
+            }
+            else {
+                texture.setDefaultBufferSize(imageDimension.getWidth(), imageDimension.getHeight());
+            }
+
+
             Surface surface = new Surface(texture);
             captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             captureRequestBuilder.addTarget(surface);
@@ -352,7 +417,23 @@ public class Camera extends AppCompatActivity {
         }
     }
     private Size getBestSize(Size[] sizes) {
-        return sizes[10];
+        float texture_ratio = (float)findViewById(R.id.image_wrapper).getWidth()/findViewById(R.id.image_wrapper).getHeight();
+        Log.d("bestsize_testtest", findViewById(R.id.image_wrapper).getWidth() + " " + findViewById(R.id.image_wrapper).getHeight() + " " + texture_ratio);
+
+        for (int i = 0; i < sizes.length; i++) {
+            float size_ratio = ((float)sizes[i].getHeight()/(float)sizes[i].getWidth());
+            Log.d("bestsize_testtest", sizes[i].getWidth() + " " + sizes[i].getHeight() + " " + ((float) sizes[i].getHeight()/sizes[i].getWidth()));
+
+            if (findViewById(R.id.image_wrapper).getHeight() >= sizes[i].getWidth()) {
+                if (size_ratio == 0.75) {
+                    Log.d("bestsize_testtest", "^ this one");
+
+                    return sizes[i];
+                }
+            }
+        }
+
+        return sizes[8];
     }
     private void openCamera() {
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
@@ -438,17 +519,18 @@ public class Camera extends AppCompatActivity {
         super.onPause();
     }
 
-    public void openPostProcessActivity(String img_path, int jpg_h, int jpg_w, int start_y, float scale, boolean flash) {
+    public void openPostProcessActivity(String img_path, int jpg_h, int jpg_w, int start_y, float scale, boolean flash, int rotationDeg) {
         Intent intent = new Intent(this , PostProcess.class);
         intent.putExtra("img_path", img_path);
-        intent.putExtra("jpeg_height", jpg_h);
-        intent.putExtra("jpeg_width", jpg_w);
+        intent.putExtra("jpeg_height", jpg_w);
+        intent.putExtra("jpeg_width", jpg_h);
         intent.putExtra("starting_y", start_y);
-        intent.putExtra("scaling_factor", scale);
+        intent.putExtra("scaling_factor", (float) 1/scale);
         intent.putExtra("flash", flash);
         intent.putExtra("account", google_account);
         intent.putExtra("googleServiceHelper", (Parcelable) mDriveServiceHelper);
         intent.putExtra("dropboxAuthToken", dropbox_authToken);
+        intent.putExtra("rotationDegree", rotationDeg);
 
         intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
 

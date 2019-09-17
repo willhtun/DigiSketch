@@ -21,6 +21,7 @@ import android.os.Environment;
 import android.os.StrictMode;
 import android.text.method.DateTimeKeyListener;
 import android.util.Log;
+import android.util.TimingLogger;
 import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
@@ -65,6 +66,8 @@ public class PostProcess extends AppCompatActivity {
     File picturesFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
 
     private Bitmap[] final_bitmap_array;
+    private Bitmap[] final_bitmap_array_transparent;
+    private boolean transparent_mode = false;
 
     private int seekValue_at_preview = 1;
     private int seekValue_at = 1;
@@ -95,22 +98,29 @@ public class PostProcess extends AppCompatActivity {
     private LinearLayout panel_crop;
     private LinearLayout panel_save;
 
-    int cropped_height;
-    int cropped_width;
+    int jpeg_height;
+    int jpeg_width;
     int starting_y;
     private float scalingFactor;
     private boolean flash;
     int cropx_size_px;
+    int rotationDeg;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        TimingLogger timings = new TimingLogger("time_test", "start");
+
         OpenCVLoader.initDebug();
+        timings.addSplit("set up 10");
         super.onCreate(savedInstanceState);
+        timings.addSplit("set up 11");
         setContentView(R.layout.activity_post_process);
+        timings.addSplit("set up 12");
 
         findViewById(R.id.camera_captureProcess).setVisibility(View.VISIBLE);
 
         String img_path = getIntent().getStringExtra("img_path");
+        timings.addSplit("set up 2");
 
         image_view = findViewById(R.id.image_viewer);
         crop_1 = findViewById(R.id.crop_1);
@@ -119,31 +129,35 @@ public class PostProcess extends AppCompatActivity {
         crop_4 = findViewById(R.id.crop_4);
         crop_rect = findViewById(R.id.image_cropRect);
         crop_mask = findViewById(R.id.image_cropMask);
-        seekbar_wrapper =  findViewById(R.id.process_seekbar_wrapper);
+        seekbar_wrapper = findViewById(R.id.process_seekbar_wrapper);
         panel_options = findViewById(R.id.panel_options);
         panel_adjust = findViewById(R.id.panel_adjust);
         panel_crop = findViewById(R.id.panel_crop);
         panel_save = findViewById(R.id.panel_save);
         progressBar = findViewById(R.id.camera_progressBar);
         progressText = findViewById(R.id.camera_progressText);
-
+        timings.addSplit("set up 3");
         try {
             google_account = getIntent().getParcelableExtra("account");
             dropbox_authToken = getIntent().getStringExtra("dropboxAuthToken");
-            Log.d("drop_test", "auth:" + dropbox_authToken);
 
-            cropped_height = getIntent().getIntExtra("jpeg_height", 0);
-            cropped_width = getIntent().getIntExtra("jpeg_width", 0);
+            jpeg_height = getIntent().getIntExtra("jpeg_height", 0);
+            jpeg_width = getIntent().getIntExtra("jpeg_width", 0);
             starting_y = getIntent().getIntExtra("starting_y", 0);
             scalingFactor = getIntent().getFloatExtra("scaling_factor", 0f);
             flash = getIntent().getBooleanExtra("flash", false);
+            rotationDeg = getIntent().getIntExtra("rotationDegree", 0);
+            timings.addSplit("intents set up");
 
             Bitmap bitmap = BitmapFactory.decodeFile(img_path);
-            bitmap = RotateBitmap(bitmap, 90);
+            bitmap = RotateBitmap(bitmap, rotationDeg);
+            timings.addSplit("bit map set up");
 
             Bitmap[] params2 = {bitmap};
             image_view.setScaleType(ImageView.ScaleType.CENTER_CROP);
             image_view.setImageBitmap(bitmap);
+            timings.addSplit("params set up");
+            timings.dumpToLog();
 
             new DownloadImageTask().execute(params2);
 
@@ -164,17 +178,10 @@ public class PostProcess extends AppCompatActivity {
         if (flash) {
             findViewById(R.id.btn_flash_on).setVisibility(View.VISIBLE);
             findViewById(R.id.btn_flash_off).setVisibility(View.INVISIBLE);
-        }
-        else {
+        } else {
             findViewById(R.id.btn_flash_on).setVisibility(View.INVISIBLE);
             findViewById(R.id.btn_flash_off).setVisibility(View.VISIBLE);
         }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
     }
 
     @Override
@@ -210,7 +217,10 @@ public class PostProcess extends AppCompatActivity {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 seekValue_at_preview = seekBar.getProgress();
-                image_view.setImageBitmap(final_bitmap_array[seekValue_at_preview]);
+                if (transparent_mode)
+                    image_view.setImageBitmap(final_bitmap_array_transparent[seekValue_at_preview]);
+                else
+                    image_view.setImageBitmap(final_bitmap_array[seekValue_at_preview]);
             }
         });
     }
@@ -462,10 +472,6 @@ public class PostProcess extends AppCompatActivity {
     }
 
     // Button functions ============================================================================
-    public void openRetake(View view) {
-        finish();
-    }
-
     public void openAdjustment(View view) {
         panel_options.setVisibility(View.INVISIBLE);
         panel_adjust.setVisibility(View.VISIBLE);
@@ -476,7 +482,11 @@ public class PostProcess extends AppCompatActivity {
 
     public void confirmAdjust(View view) {
         seekValue_at = seekValue_at_preview;
-        image_view.setImageBitmap(final_bitmap_array[seekValue_at]);
+
+        if (transparent_mode)
+            image_view.setImageBitmap(final_bitmap_array_transparent[seekValue_at]);
+        else
+            image_view.setImageBitmap(final_bitmap_array[seekValue_at]);
 
         panel_options.setVisibility(View.VISIBLE);
         panel_adjust.setVisibility(View.INVISIBLE);
@@ -486,7 +496,11 @@ public class PostProcess extends AppCompatActivity {
     }
 
     public void cancelAdjust(View view) {
-        image_view.setImageBitmap(final_bitmap_array[seekValue_at]);
+        if (transparent_mode)
+            image_view.setImageBitmap(final_bitmap_array_transparent[seekValue_at]);
+        else
+            image_view.setImageBitmap(final_bitmap_array[seekValue_at]);
+
         ((SeekBar) findViewById(R.id.process_seekbar_at)).setProgress(seekValue_at);
 
         panel_options.setVisibility(View.VISIBLE);
@@ -635,6 +649,17 @@ public class PostProcess extends AppCompatActivity {
         mode = 0;
     }
 
+    public void openRemoveBackground(View view) {
+        if (!transparent_mode) {
+            transparent_mode = true;
+            image_view.setImageBitmap(final_bitmap_array_transparent[seekValue_at]);
+        }
+        else {
+            transparent_mode = false;
+            image_view.setImageBitmap(final_bitmap_array[seekValue_at]);
+        }
+    }
+
     public void openSave(View view) {
         panel_options.setVisibility(View.INVISIBLE);
         panel_save.setVisibility(View.VISIBLE);
@@ -650,25 +675,54 @@ public class PostProcess extends AppCompatActivity {
     }
 
     public Bitmap getSaveBitmap() {
-        Bitmap saveBmp;
-        if (cropped)
-            saveBmp = Bitmap.createBitmap(final_bitmap_array[seekValue_at],
-                    (int) (croppedRect.left * scalingFactor) + starting_y,
-                    (int) (croppedRect.top * scalingFactor),
-                    (int) (croppedRect.width() * scalingFactor),
-                    (int) (croppedRect.height() * scalingFactor));
-
-        else {
-            int[] pixels = new int[cropped_width * (cropped_height-starting_y)];
-            final_bitmap_array[seekValue_at].getPixels(pixels, 0, cropped_height - starting_y, starting_y, 0, cropped_height - starting_y - starting_y, cropped_width);
-            saveBmp = Bitmap.createBitmap(pixels,
-                    0,
-                    cropped_height - starting_y,
-                    cropped_height - starting_y - starting_y,
-                    cropped_width,
-                    Bitmap.Config.ARGB_8888);
+        if (transparent_mode) {
+            Bitmap saveBmp; //0.8686
+            if (cropped) {
+                Log.d("cropped_test", "xxx:" + (croppedRect.width() * scalingFactor));
+                Log.d("cropped_test2", final_bitmap_array_transparent[seekValue_at].getWidth() + "_" + findViewById(R.id.image_viewer).getWidth());
+                saveBmp = Bitmap.createBitmap(final_bitmap_array_transparent[seekValue_at],
+                        ((int)((croppedRect.left * scalingFactor) + (dpToPx(8)/2) + starting_y)),
+                        (int) (croppedRect.top * scalingFactor),
+                        (int) (croppedRect.width() * scalingFactor),
+                        (int) (croppedRect.height() * scalingFactor));
+            }
+            else {
+                Log.d("dp_test", "." + dpToPx(8));
+                Log.d("sizesize_test", final_bitmap_array_transparent[seekValue_at].getWidth() + "..." + final_bitmap_array_transparent[seekValue_at].getHeight());
+                Log.d("sizesize_test", "..." + jpeg_width + " " + jpeg_height + " " + starting_y + " " + scalingFactor);
+                saveBmp = Bitmap.createBitmap(final_bitmap_array_transparent[seekValue_at],
+                        starting_y + (dpToPx(8)/2),
+                        0,
+                        jpeg_width - starting_y - starting_y - dpToPx(8),
+                        jpeg_height);
+            }
+            return saveBmp;
         }
-        return saveBmp;
+        else {
+            Bitmap saveBmp; //0.8686
+            if (cropped) {
+                Log.d("cropped_test", "xxx:" + (croppedRect.width() * scalingFactor));
+                Log.d("cropped_test2", final_bitmap_array[seekValue_at].getWidth() + "_" + findViewById(R.id.image_viewer).getWidth());
+                saveBmp = Bitmap.createBitmap(final_bitmap_array[seekValue_at],
+                        ((int)((croppedRect.left * scalingFactor) + (dpToPx(8)/2) + starting_y)),
+                        (int) (croppedRect.top * scalingFactor),
+                        (int) (croppedRect.width() * scalingFactor),
+                        (int) (croppedRect.height() * scalingFactor));
+            }
+            else {
+                Log.d("dp_test", "." + dpToPx(8));
+                Log.d("sizesize_test", final_bitmap_array[seekValue_at].getWidth() + "..." + final_bitmap_array[seekValue_at].getHeight());
+                Log.d("sizesize_test", "..." + jpeg_width + " " + jpeg_height + " " + starting_y + " " + scalingFactor);
+                Log.d("sizesize_test", starting_y + ":" + (dpToPx(8)/2));
+
+                saveBmp = Bitmap.createBitmap(final_bitmap_array[seekValue_at],
+                        starting_y + (dpToPx(8)/2),
+                        0,
+                        jpeg_width - starting_y - starting_y - dpToPx(8),
+                        jpeg_height);
+            }
+            return saveBmp;
+        }
     }
 
     public void save_local(View view) {
@@ -680,11 +734,11 @@ public class PostProcess extends AppCompatActivity {
             digisketchFolder.mkdir();
 
         // TODO catch folder creation error
-
         File file = new File(digisketchFolder, "pic_"+ Calendar.getInstance().getTimeInMillis() + ".png");
         try (FileOutputStream out = new FileOutputStream(file)) {
             Bitmap saveBmp = getSaveBitmap();
             saveBmp.compress(Bitmap.CompressFormat.PNG, 100, out);
+            Toast.makeText(this, "Saved to /Pictures/DigiSketch", Toast.LENGTH_SHORT).show();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -704,8 +758,6 @@ public class PostProcess extends AppCompatActivity {
             Bitmap saveBmp = getSaveBitmap();
             saveBmp.compress(Bitmap.CompressFormat.PNG, 100, out);
             byte[] save_bytearray = out.toByteArray();
-
-            Log.d("save_test", new String(save_bytearray));
 
             // Prepare drive
             GoogleAccountCredential credential =
@@ -731,11 +783,9 @@ public class PostProcess extends AppCompatActivity {
     }
 
     public void save_drop(View view) {
-        if (dropbox_authToken == null || dropbox_authToken == "")
+        if (dropbox_authToken == null)
             Toast.makeText(this, "Not signed in to Dropbox", Toast.LENGTH_SHORT).show();
         else {
-            Toast.makeText(this, "Saved to " + google_account.getEmail(), Toast.LENGTH_SHORT).show();
-
             // Prepare image
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             Bitmap saveBmp = getSaveBitmap();
@@ -745,17 +795,23 @@ public class PostProcess extends AppCompatActivity {
             // Prepare dropbox
             int SDK_INT = android.os.Build.VERSION.SDK_INT;
             if (SDK_INT > 8) {
-                StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
-                        .permitAll().build();
-                StrictMode.setThreadPolicy(policy);
-                DbxRequestConfig config = DbxRequestConfig.newBuilder("yr0vsv7wjiujk5a").build();
-                DbxClientV2 dropbox_client = new DbxClientV2(config, dropbox_authToken);
+                DbxClientV2 dropbox_client = null;
+                try {
+                    StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
+                            .permitAll().build();
+                    StrictMode.setThreadPolicy(policy);
+                    DbxRequestConfig config = DbxRequestConfig.newBuilder("yr0vsv7wjiujk5a").build();
+                    dropbox_client = new DbxClientV2(config, dropbox_authToken);
+                } catch (Exception e) {
+                    Toast.makeText(this, "Not signed in to Dropbox", Toast.LENGTH_SHORT).show();
+                }
 
                 // Upload to dropbox
                 try {
                     InputStream in = new ByteArrayInputStream(save_bytearray);
-                    FileMetadata metadata = dropbox_client.files().uploadBuilder("/pic_"+ Calendar.getInstance().getTimeInMillis() + ".png")
+                    FileMetadata metadata = dropbox_client.files().uploadBuilder("/pic_" + Calendar.getInstance().getTimeInMillis() + ".png")
                             .uploadAndFinish(in);
+                    Toast.makeText(this, "Saved to " + dropbox_client.users().getCurrentAccount().getEmail(), Toast.LENGTH_SHORT).show();
                 } catch (UploadErrorException e) {
                     Toast.makeText(this, "Upload error", Toast.LENGTH_SHORT).show();
                 } catch (DbxException e) {
@@ -778,40 +834,53 @@ public class PostProcess extends AppCompatActivity {
     private class DownloadImageTask extends AsyncTask<Bitmap, Integer, Bitmap[]> {
         @Override
         protected Bitmap[] doInBackground(Bitmap... bm) {
+            TimingLogger timings = new TimingLogger("time_test", "start");
+
             Bitmap bitmap = bm[0];
             Mat img = new Mat();
             Bitmap bmp32 = bitmap.copy(Bitmap.Config.ARGB_8888, true);
             Utils.bitmapToMat(bmp32, img);
             publishProgress(35);
+            timings.addSplit("cv prepare");
 
             Mat img_temp = img.clone();
             Mat img_canny;
             Mat[] img_finals;
             Mat[] img_at;
+            timings.addSplit("cv 0");
 
             img_temp = OpenCVProcessing.process1_contrast(img_temp);
             publishProgress(40);
+            timings.addSplit("cv 1");
 
             img_temp = OpenCVProcessing.process2_removeNoise(img_temp);
             publishProgress(45);
+            timings.addSplit("cv 2");
 
             img_canny = OpenCVProcessing.process3_canny(img_temp);
             publishProgress(55);
+            timings.addSplit("cv 3");
 
             img_at = OpenCVProcessing.process4_at(img);
             publishProgress(75);
+            timings.addSplit("cv 4");
 
             img_finals = OpenCVProcessing.process5_subtraction(img_at, img_canny);
             publishProgress(90);
+            timings.addSplit("cv 5");
 
             final_bitmap_array = new Bitmap[3];
+            final_bitmap_array_transparent = new Bitmap[3];
 
             for (int i = 0; i < 3; i++) {
                 Bitmap final_bitmap = Bitmap.createBitmap(img_finals[i].cols(), img_finals[i].rows(), Bitmap.Config.ARGB_8888);
                 Utils.matToBitmap(img_finals[i], final_bitmap);
-                final_bitmap_array[i] = makeTransparent(final_bitmap);
+                final_bitmap_array[i] = final_bitmap;
+                final_bitmap_array_transparent[i] = makeTransparent(final_bitmap);
                 publishProgress(100);
             }
+            timings.addSplit("cv done");
+            timings.dumpToLog();
 
             return final_bitmap_array;
         }
@@ -865,7 +934,7 @@ public class PostProcess extends AppCompatActivity {
     }
 
     public static Bitmap makeTransparent(Bitmap bit) {
-        Bitmap myBitmap = bit;
+        Bitmap myBitmap = bit.copy(bit.getConfig(), true);
         int [] allpixels = new int [myBitmap.getHeight() * myBitmap.getWidth()];
 
         myBitmap.getPixels(allpixels, 0, myBitmap.getWidth(), 0, 0, myBitmap.getWidth(), myBitmap.getHeight());
