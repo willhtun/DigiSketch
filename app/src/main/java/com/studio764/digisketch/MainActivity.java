@@ -8,12 +8,13 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.StrictMode;
-import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -58,6 +59,8 @@ public class MainActivity extends AppCompatActivity {
     private DbxClientV2 dropbox_client;
     private String dropbox_authToken = null;
 
+    private int aspectRatio;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -68,20 +71,20 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.Button_Camera).setVisibility(View.INVISIBLE);
         findViewById(R.id.Button_GoogleDrive).setVisibility(View.INVISIBLE);
         findViewById(R.id.Button_Dropbox).setVisibility(View.INVISIBLE);
-        findViewById(R.id.Button_Settings).setVisibility(View.INVISIBLE);
 
         SharedPreferences pref = getApplicationContext().getSharedPreferences("MyPref", 0); // 0 - for private mode
         SharedPreferences.Editor editor = pref.edit();
         int launch = pref.getInt("app_launchTimes", 0);
         editor.putInt("app_launchTimes", launch + 1);
         editor.commit();
+
+        aspectRatio = getAspectRatio();
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        Log.d("drive_test", "on result is called");
         // Result returned from launching the Intent from GoogleSignInClient.getSignInIntent(...);
         if (requestCode == REQUEST_CODE_SIGN_IN) {
             if (resultCode == Activity.RESULT_OK && data != null) {
@@ -118,6 +121,7 @@ public class MainActivity extends AppCompatActivity {
                 makeSceneTransitionAnimation(this, findViewById(R.id.Button_Camera), "cameraButtonTransition");
         intent.putExtra("googleAccount", google_account);
         intent.putExtra("dropboxAuthToken", dropbox_authToken);
+        intent.putExtra("aspect_ratio", aspectRatio);
 
         startActivity(intent, options.toBundle());
     }
@@ -135,6 +139,10 @@ public class MainActivity extends AppCompatActivity {
 
         if (!inSettings) {
             if (firstStartUp) {
+                if (aspectRatio == 0) {
+                    findViewById(R.id.notsupported_text).setVisibility(View.VISIBLE);
+                    return;
+                }
                 ImageView btn_cam = findViewById(R.id.Button_Camera);
                 btn_cam.setAlpha(0f);
                 btn_cam.setVisibility(View.VISIBLE);
@@ -153,13 +161,6 @@ public class MainActivity extends AppCompatActivity {
                 btn_drop.setAlpha(0f);
                 btn_drop.setVisibility(View.VISIBLE);
                 btn_drop.animate()
-                        .alpha(1f)
-                        .setDuration(300)
-                        .setListener(null);
-                ImageView btn_settings = findViewById(R.id.Button_Settings);
-                btn_settings.setAlpha(0f);
-                btn_settings.setVisibility(View.VISIBLE);
-                btn_settings.animate()
                         .alpha(1f)
                         .setDuration(300)
                         .setListener(null);
@@ -245,7 +246,6 @@ public class MainActivity extends AppCompatActivity {
                         public void onComplete(@NonNull Task<GoogleSignInAccount> task) {
                             try {
                                 google_account = task.getResult();
-                                Log.d("drive_test", "silent sign in complete!" + google_account.getEmail());
                             } catch (Exception e) {
                                 // User is supposed to be logged out
                             }
@@ -253,7 +253,6 @@ public class MainActivity extends AppCompatActivity {
                         }
                     });
         } catch (Exception e) {
-            Log.d("drive_test", "silent sign in doesnt work");
             // Email not selected first time
             e.printStackTrace();
         }
@@ -407,6 +406,7 @@ public class MainActivity extends AppCompatActivity {
             btn_drop.setEnabled(false);
 
             ((ImageButton) findViewById(R.id.Button_Settings)).setImageResource(R.drawable.ic_back);
+            findViewById(R.id.rate_button).setVisibility(View.VISIBLE);
             inSettings = true;
         }
         else {
@@ -443,15 +443,38 @@ public class MainActivity extends AppCompatActivity {
             btn_drop.setEnabled(true);
 
             ((ImageButton) findViewById(R.id.Button_Settings)).setImageResource(R.drawable.ic_settings);
+            findViewById(R.id.rate_button).setVisibility(View.GONE);
             inSettings = false;
         }
     }
 
     public void openFeedback(View view) {
-        String url = "https://forms.gle/Qp8Ezbsov9B7Eaq58";
+        String url = "https://play.google.com/store/apps/details?id=com.studio764.digisketch";
 
         Intent i = new Intent(Intent.ACTION_VIEW);
         i.setData(Uri.parse(url));
         startActivity(i);
+    }
+
+    private int getAspectRatio() {
+        int remainingHeight = getResources().getDisplayMetrics().heightPixels - dpToPx(100);
+        int width = getResources().getDisplayMetrics().widthPixels;
+        float ratio = (float) width/remainingHeight;
+        if (ratio < .5625f)
+            return 169;
+        else if (ratio < .75f)
+            return 43;
+        else
+            return 0;
+    }
+
+    private int dpToPx(float dp) {
+        Resources r = getResources();
+        float px = TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                dp,
+                r.getDisplayMetrics()
+        );
+        return (int) px;
     }
 }

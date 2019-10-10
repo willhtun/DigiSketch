@@ -19,6 +19,19 @@
         app:layout_constraintVertical_bias="0.0"
         app:srcCompat="@drawable/bg" />
 
+    <TextView
+        android:id="@+id/notsupported_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="64dp"
+        android:text="Screen size not supported "
+        android:textColor="#BE3F3F"
+        android:textSize="14sp"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
     <ImageButton
         android:id="@+id/Button_Camera"
         style="@android:style/Widget.Holo.Light.ImageButton"
@@ -26,7 +39,7 @@
         android:layout_height="76dp"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
-        android:layout_marginBottom="32dp"
+        android:layout_marginBottom="16dp"
         android:background="@drawable/long_button"
         android:onClick="openCameraActivity"
         android:padding="20dp"
@@ -74,7 +87,7 @@
         android:id="@+id/space"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="64dp"
+        android:layout_marginBottom="55dp"
         app:layout_constraintBottom_toTopOf="@+id/Button_Camera"
         app:layout_constraintEnd_toEndOf="@+id/Button_Camera"
         app:layout_constraintStart_toStartOf="@+id/Button_Camera" />
@@ -93,28 +106,13 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <Button
-        android:id="@+id/button2"
-        android:layout_width="wrap_content"
-        android:layout_height="35dp"
-        android:layout_marginEnd="16dp"
-        android:background="@drawable/long_button_white"
-        android:backgroundTint="#EED766"
-        android:onClick="openFeedback"
-        android:text="Feedback"
-        android:textColor="#4D4D4D"
-        android:textSize="12sp"
-        app:layout_constraintBottom_toBottomOf="@+id/Button_Settings"
-        app:layout_constraintEnd_toStartOf="@+id/Button_Settings"
-        app:layout_constraintTop_toTopOf="@+id/Button_Settings" />
-
     <LinearLayout
         android:id="@+id/settings"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
-        android:layout_marginBottom="32dp"
+        android:layout_marginBottom="16dp"
         android:orientation="vertical"
         android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -231,7 +229,7 @@
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="8dp"
                 android:paddingBottom="8dp"
-                android:text="1.0.0"
+                android:text="1.1.0"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/version_text" />
 
@@ -253,38 +251,18 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="8dp"
+                android:paddingBottom="8dp"
                 android:text="Email"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/save_dir" />
-
-            <TextView
-                android:id="@+id/textView80"
-                android:layout_width="100dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_marginTop="8dp"
-                android:paddingBottom="8dp"
-                android:text="Donate"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/textView23" />
-
-            <TextView
-                android:id="@+id/textView24"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_marginBottom="8dp"
-                android:text="paypal.com"
-                app:layout_constraintBottom_toBottomOf="@+id/textView80"
-                app:layout_constraintStart_toEndOf="@+id/textView80"
-                app:layout_constraintTop_toTopOf="@+id/textView80" />
 
             <TextView
                 android:id="@+id/textView26"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:text="willhtun42@gmail.com"
+                android:layout_marginBottom="8dp"
+                android:text="app.studio764@gmail.com"
                 app:layout_constraintBottom_toBottomOf="@+id/textView23"
                 app:layout_constraintStart_toEndOf="@+id/textView23"
                 app:layout_constraintTop_toTopOf="@+id/textView23"
@@ -296,25 +274,38 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="8dp"
-                android:text="Feedback"
+                android:text="Support"
                 android:textSize="10sp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
-    </LinearLayout>
 
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="8dp"
-        android:text="Version 1.0.1 (Beta)"
-        android:textColor="#2E2E2E"
-        app:layout_constraintBottom_toBottomOf="@+id/main_bg"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        <Space
+            android:layout_width="wrap_content"
+            android:layout_height="16dp" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:background="@drawable/yellow_cards"
+            android:padding="8dp">
+
+
+            <Button
+                android:id="@+id/rate_button"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:background="#2f8187"
+                android:onClick="openFeedback"
+                android:text="Rate on PlayStore"
+                android:textColor="#F3F3F3"
+                android:textSize="13sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

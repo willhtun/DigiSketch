@@ -4,8 +4,8 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.SurfaceTexture;
@@ -25,10 +25,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Parcelable;
-import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
-import android.util.TimingLogger;
+import android.util.TypedValue;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
@@ -43,12 +42,9 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.core.app.ActivityCompat;
 
-import com.dropbox.core.v2.DbxClientV2;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.api.client.util.DateTime;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -57,8 +53,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.sql.Time;
-import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -105,11 +99,19 @@ public class Camera extends AppCompatActivity {
     private ProgressBar progressBar;
     private TextView progressText;
 
+    private int aspectRatio;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_camera);
+
+        aspectRatio = getIntent().getIntExtra("aspect_ratio", 0);
+        if (aspectRatio == 169)
+            setContentView(R.layout.activity_camera_169);
+        else if (aspectRatio == 43)
+            setContentView(R.layout.activity_camera_43);
+        else
+            setContentView(R.layout.activity_camera_43); // TODO
 
         textureView = (TextureView) findViewById(R.id.texture);
         assert textureView != null;
@@ -152,7 +154,6 @@ public class Camera extends AppCompatActivity {
         @Override
         public void onOpened(CameraDevice camera) {
             //This is called when the camera is open
-            Log.e(TAG, "onOpened");
             cameraDevice = camera;
             createCameraPreview();
         }
@@ -199,7 +200,6 @@ public class Camera extends AppCompatActivity {
         }, 100);
 
         if(null == cameraDevice) {
-            Log.e(TAG, "cameraDevice is null");
             return;
         }
 
@@ -361,8 +361,6 @@ public class Camera extends AppCompatActivity {
             SurfaceTexture texture = textureView.getSurfaceTexture();
             assert texture != null;
             Size imageDimension = getBestSize(sizes); // 1.1513
-            Log.d("texture_test", "best size: w" + imageDimension.getWidth() + " h" + imageDimension.getHeight());
-            Log.d("texture_test", "wrapper size: w" + findViewById(R.id.image_wrapper).getWidth() + " h" + findViewById(R.id.image_wrapper).getHeight());
 
             runOnUiThread(new Runnable() {
                 @Override
@@ -377,20 +375,9 @@ public class Camera extends AppCompatActivity {
             jpegHeight = imageDimension.getWidth();
             jpegWidth = imageDimension.getHeight();
             scaling_factor = (float) findViewById(R.id.image_wrapper).getHeight()/imageDimension.getWidth();    //1.1513f;
-            Log.d("scaling_test", scaling_factor + ".");
-            Log.d("scaling_test", (imageDimension.getHeight() * scaling_factor) + ".");
-
             starting_y = (jpegWidth - findViewById(R.id.image_wrapper).getWidth());
-            Log.d("_test_test", starting_y +"/");
 
-            float texture_ratio = (float)findViewById(R.id.image_wrapper).getWidth()/findViewById(R.id.image_wrapper).getHeight();
-            if (texture_ratio > 0.75) {
-                texture.setDefaultBufferSize((int) (imageDimension.getHeight() * 0.75f), imageDimension.getHeight());
-                starting_y = 0;
-            }
-            else {
-                texture.setDefaultBufferSize(imageDimension.getWidth(), imageDimension.getHeight());
-            }
+            texture.setDefaultBufferSize(imageDimension.getWidth(), imageDimension.getHeight());
 
 
             Surface surface = new Surface(texture);
@@ -418,16 +405,15 @@ public class Camera extends AppCompatActivity {
     }
     private Size getBestSize(Size[] sizes) {
         float texture_ratio = (float)findViewById(R.id.image_wrapper).getWidth()/findViewById(R.id.image_wrapper).getHeight();
-        Log.d("bestsize_testtest", findViewById(R.id.image_wrapper).getWidth() + " " + findViewById(R.id.image_wrapper).getHeight() + " " + texture_ratio);
 
         for (int i = 0; i < sizes.length; i++) {
             float size_ratio = ((float)sizes[i].getHeight()/(float)sizes[i].getWidth());
-            Log.d("bestsize_testtest", sizes[i].getWidth() + " " + sizes[i].getHeight() + " " + ((float) sizes[i].getHeight()/sizes[i].getWidth()));
 
             if (findViewById(R.id.image_wrapper).getHeight() >= sizes[i].getWidth()) {
-                if (size_ratio == 0.75) {
-                    Log.d("bestsize_testtest", "^ this one");
-
+                if (aspectRatio == 169 && size_ratio == 0.5625) {
+                    return sizes[i];
+                }
+                if (aspectRatio == 43 && size_ratio == 0.75) {
                     return sizes[i];
                 }
             }
@@ -437,7 +423,6 @@ public class Camera extends AppCompatActivity {
     }
     private void openCamera() {
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-        Log.e(TAG, "is camera open");
         try {
             cameraId = manager.getCameraIdList()[0];
             CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
@@ -453,11 +438,10 @@ public class Camera extends AppCompatActivity {
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
-        Log.e(TAG, "openCamera X");
     }
     protected void updatePreview() {
         if(null == cameraDevice) {
-            Log.e(TAG, "updatePreview error, return");
+            return;
         }
         captureRequestBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
         try {
@@ -489,7 +473,6 @@ public class Camera extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        Log.e(TAG, "onResume");
         startBackgroundThread();
         if (textureView.isAvailable()) {
             openCameraWithHandlerThread();
@@ -514,13 +497,13 @@ public class Camera extends AppCompatActivity {
 
     @Override
     protected void onPause() {
-        Log.e(TAG, "onPause");
         stopBackgroundThread();
         super.onPause();
     }
 
     public void openPostProcessActivity(String img_path, int jpg_h, int jpg_w, int start_y, float scale, boolean flash, int rotationDeg) {
         Intent intent = new Intent(this , PostProcess.class);
+        intent.putExtra("aspect_ratio", aspectRatio);
         intent.putExtra("img_path", img_path);
         intent.putExtra("jpeg_height", jpg_w);
         intent.putExtra("jpeg_width", jpg_h);
@@ -586,9 +569,18 @@ public class Camera extends AppCompatActivity {
                 wait();
             }
             catch (InterruptedException e) {
-                Log.w("TESTING", "wait was interrupted");
             }
         }
+    }
+
+    private int dpToPx(float dp) {
+        Resources r = getResources();
+        float px = TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                dp,
+                r.getDisplayMetrics()
+        );
+        return (int) px;
     }
 }
 

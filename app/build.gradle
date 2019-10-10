@@ -7,8 +7,8 @@ android {
         applicationId "com.studio764.digisketch"
         minSdkVersion 24
         targetSdkVersion 28
-        versionCode 3
-        versionName "1.0.1-beta"
+        versionCode 6
+        versionName "1.1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {

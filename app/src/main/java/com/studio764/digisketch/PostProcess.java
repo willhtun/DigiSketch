@@ -10,18 +10,13 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
-import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.StrictMode;
-import android.text.method.DateTimeKeyListener;
-import android.util.Log;
-import android.util.TimingLogger;
 import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
@@ -32,14 +27,12 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.dropbox.core.DbxApiException;
 import com.dropbox.core.DbxException;
 import com.dropbox.core.DbxRequestConfig;
 import com.dropbox.core.v2.DbxClientV2;
 import com.dropbox.core.v2.files.FileMetadata;
 import com.dropbox.core.v2.files.UploadErrorException;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.gms.tasks.Task;
 import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.json.gson.GsonFactory;
@@ -57,10 +50,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Calendar;
 import java.util.Collections;
-import java.util.Date;
 
 public class PostProcess extends AppCompatActivity {
     File picturesFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
@@ -108,19 +99,20 @@ public class PostProcess extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        TimingLogger timings = new TimingLogger("time_test", "start");
-
         OpenCVLoader.initDebug();
-        timings.addSplit("set up 10");
         super.onCreate(savedInstanceState);
-        timings.addSplit("set up 11");
-        setContentView(R.layout.activity_post_process);
-        timings.addSplit("set up 12");
+
+        int aspectratio = getIntent().getIntExtra("aspect_ratio", 0);
+        if (aspectratio == 169)
+            setContentView(R.layout.activity_post_process_169);
+        else if (aspectratio == 43)
+            setContentView(R.layout.activity_post_process_43);
+        else
+            setContentView(R.layout.activity_post_process_43);
 
         findViewById(R.id.camera_captureProcess).setVisibility(View.VISIBLE);
 
         String img_path = getIntent().getStringExtra("img_path");
-        timings.addSplit("set up 2");
 
         image_view = findViewById(R.id.image_viewer);
         crop_1 = findViewById(R.id.crop_1);
@@ -136,7 +128,7 @@ public class PostProcess extends AppCompatActivity {
         panel_save = findViewById(R.id.panel_save);
         progressBar = findViewById(R.id.camera_progressBar);
         progressText = findViewById(R.id.camera_progressText);
-        timings.addSplit("set up 3");
+
         try {
             google_account = getIntent().getParcelableExtra("account");
             dropbox_authToken = getIntent().getStringExtra("dropboxAuthToken");
@@ -147,17 +139,13 @@ public class PostProcess extends AppCompatActivity {
             scalingFactor = getIntent().getFloatExtra("scaling_factor", 0f);
             flash = getIntent().getBooleanExtra("flash", false);
             rotationDeg = getIntent().getIntExtra("rotationDegree", 0);
-            timings.addSplit("intents set up");
 
             Bitmap bitmap = BitmapFactory.decodeFile(img_path);
             bitmap = RotateBitmap(bitmap, rotationDeg);
-            timings.addSplit("bit map set up");
 
             Bitmap[] params2 = {bitmap};
             image_view.setScaleType(ImageView.ScaleType.CENTER_CROP);
             image_view.setImageBitmap(bitmap);
-            timings.addSplit("params set up");
-            timings.dumpToLog();
 
             new DownloadImageTask().execute(params2);
 
@@ -241,6 +229,8 @@ public class PostProcess extends AppCompatActivity {
         final int windowheight = image_view.getHeight();
         final int windowLeftBorder = (Resources.getSystem().getDisplayMetrics().widthPixels - windowwidth) / 2;
 
+        final int top_distance = findViewById(R.id.postprocessLayout).getTop() - findViewById(R.id.image_wrapper).getTop();
+
         crop_1.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -252,14 +242,14 @@ public class PostProcess extends AppCompatActivity {
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_MOVE:
                         int x_cord = (int) event.getRawX();
-                        int y_cord = (int) event.getRawY();
+                        int y_cord = (int) event.getRawY() + top_distance;
 
                         if (x_cord > crop_2.getLeft() - 180) x_cord = (int) crop_2.getLeft() - 180;
                         if (y_cord > crop_4.getTop() - 100) y_cord = (int) crop_4.getTop() - 100;
                         if (x_cord > windowwidth) x_cord = windowwidth;
                         if (x_cord < windowLeftBorder) x_cord = windowLeftBorder;
                         if (y_cord > windowheight) y_cord = windowheight;
-
+                        if (y_cord < dpToPx(8) + 180) y_cord = dpToPx(8) + 180;
 
                         layoutParams1.leftMargin = x_cord - 100;
                         layoutParams1.topMargin = y_cord - 180;
@@ -299,13 +289,15 @@ public class PostProcess extends AppCompatActivity {
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_MOVE:
                         int x_cord = (int) event.getRawX();
-                        int y_cord = (int) event.getRawY();
+                        int y_cord = (int) event.getRawY() + top_distance;
 
-                        if (x_cord < crop_1.getRight() + 200) x_cord = (int) crop_1.getRight() + 200;
+                        if (x_cord < crop_1.getRight() + 250) x_cord = (int) crop_1.getRight() + 250;
                         if (y_cord > crop_3.getTop() - 100) y_cord = (int) crop_3.getTop() - 100;
                         if (x_cord > windowwidth) x_cord = windowwidth;
                         if (x_cord < windowLeftBorder) x_cord = windowLeftBorder;
                         if (y_cord > windowheight) y_cord = windowheight;
+                        if (y_cord < dpToPx(8)) y_cord = dpToPx(8);
+                        if (y_cord < dpToPx(8) + 180) y_cord = dpToPx(8) + 180;
 
                         layoutParams2.rightMargin = windowwidth - x_cord - 25;
                         layoutParams2.topMargin = y_cord - 180;
@@ -345,7 +337,7 @@ public class PostProcess extends AppCompatActivity {
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_MOVE:
                         int x_cord = (int) event.getRawX();
-                        int y_cord = (int) event.getRawY();
+                        int y_cord = (int) event.getRawY() + top_distance;
 
                         if (x_cord < crop_4.getRight() + 200) x_cord = (int) crop_4.getRight() + 200;
                         if (y_cord < crop_2.getBottom() + 250) y_cord = (int) crop_2.getBottom() + 250;
@@ -391,9 +383,9 @@ public class PostProcess extends AppCompatActivity {
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_MOVE:
                         int x_cord = (int) event.getRawX();
-                        int y_cord = (int) event.getRawY();
+                        int y_cord = (int) event.getRawY() + top_distance;
 
-                        if (x_cord > crop_3.getLeft() - 200) x_cord = (int) crop_3.getLeft() - 200;
+                        if (x_cord > crop_3.getLeft() - 150) x_cord = (int) crop_3.getLeft() - 150;
                         if (y_cord < crop_1.getBottom() + 250) y_cord = (int) crop_1.getBottom() + 250;
                         if (x_cord > windowwidth) x_cord = windowwidth;
                         if (x_cord < windowLeftBorder) x_cord = windowLeftBorder;
@@ -438,10 +430,11 @@ public class PostProcess extends AppCompatActivity {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_MOVE:
                     int x_cord = (int) event.getRawX();
-                    int y_cord = (int) event.getRawY();
+                    int y_cord = (int) event.getRawY() + top_distance;
 
                     if (x_cord - 50 + (rectParam.width / 2) > windowwidth) x_cord = windowwidth - (rectParam.width / 2) + 50;
                     if (y_cord - 150 + (rectParam.height / 2) > windowheight) y_cord = windowheight - (rectParam.height / 2) + 150;
+                    if (y_cord - 150 - (rectParam.height / 2) < dpToPx(8)) y_cord = dpToPx(8) + 150 + (rectParam.height / 2);
 
                     rectParam.leftMargin = x_cord - 50 - (rectParam.width / 2);
                     rectParam.topMargin = y_cord - 150 - (rectParam.height / 2);
@@ -678,48 +671,36 @@ public class PostProcess extends AppCompatActivity {
         if (transparent_mode) {
             Bitmap saveBmp; //0.8686
             if (cropped) {
-                Log.d("cropped_test", "xxx:" + (croppedRect.width() * scalingFactor));
-                Log.d("cropped_test2", final_bitmap_array_transparent[seekValue_at].getWidth() + "_" + findViewById(R.id.image_viewer).getWidth());
                 saveBmp = Bitmap.createBitmap(final_bitmap_array_transparent[seekValue_at],
-                        ((int)((croppedRect.left * scalingFactor) + (dpToPx(8)/2) + starting_y)),
+                        (int) (croppedRect.left * scalingFactor),
                         (int) (croppedRect.top * scalingFactor),
                         (int) (croppedRect.width() * scalingFactor),
                         (int) (croppedRect.height() * scalingFactor));
             }
             else {
-                Log.d("dp_test", "." + dpToPx(8));
-                Log.d("sizesize_test", final_bitmap_array_transparent[seekValue_at].getWidth() + "..." + final_bitmap_array_transparent[seekValue_at].getHeight());
-                Log.d("sizesize_test", "..." + jpeg_width + " " + jpeg_height + " " + starting_y + " " + scalingFactor);
                 saveBmp = Bitmap.createBitmap(final_bitmap_array_transparent[seekValue_at],
-                        starting_y + (dpToPx(8)/2),
                         0,
-                        jpeg_width - starting_y - starting_y - dpToPx(8),
-                        jpeg_height);
+                        dpToPx(8),
+                        final_bitmap_array_transparent[seekValue_at].getWidth(),
+                        final_bitmap_array_transparent[seekValue_at].getHeight() - dpToPx(8));
             }
             return saveBmp;
         }
         else {
             Bitmap saveBmp; //0.8686
             if (cropped) {
-                Log.d("cropped_test", "xxx:" + (croppedRect.width() * scalingFactor));
-                Log.d("cropped_test2", final_bitmap_array[seekValue_at].getWidth() + "_" + findViewById(R.id.image_viewer).getWidth());
                 saveBmp = Bitmap.createBitmap(final_bitmap_array[seekValue_at],
-                        ((int)((croppedRect.left * scalingFactor) + (dpToPx(8)/2) + starting_y)),
+                        (int) (croppedRect.left * scalingFactor),
                         (int) (croppedRect.top * scalingFactor),
                         (int) (croppedRect.width() * scalingFactor),
                         (int) (croppedRect.height() * scalingFactor));
             }
             else {
-                Log.d("dp_test", "." + dpToPx(8));
-                Log.d("sizesize_test", final_bitmap_array[seekValue_at].getWidth() + "..." + final_bitmap_array[seekValue_at].getHeight());
-                Log.d("sizesize_test", "..." + jpeg_width + " " + jpeg_height + " " + starting_y + " " + scalingFactor);
-                Log.d("sizesize_test", starting_y + ":" + (dpToPx(8)/2));
-
                 saveBmp = Bitmap.createBitmap(final_bitmap_array[seekValue_at],
-                        starting_y + (dpToPx(8)/2),
                         0,
-                        jpeg_width - starting_y - starting_y - dpToPx(8),
-                        jpeg_height);
+                        dpToPx(8),
+                        final_bitmap_array[seekValue_at].getWidth(),
+                        final_bitmap_array[seekValue_at].getHeight() - dpToPx(8));
             }
             return saveBmp;
         }
@@ -834,40 +815,31 @@ public class PostProcess extends AppCompatActivity {
     private class DownloadImageTask extends AsyncTask<Bitmap, Integer, Bitmap[]> {
         @Override
         protected Bitmap[] doInBackground(Bitmap... bm) {
-            TimingLogger timings = new TimingLogger("time_test", "start");
-
             Bitmap bitmap = bm[0];
             Mat img = new Mat();
             Bitmap bmp32 = bitmap.copy(Bitmap.Config.ARGB_8888, true);
             Utils.bitmapToMat(bmp32, img);
             publishProgress(35);
-            timings.addSplit("cv prepare");
 
             Mat img_temp = img.clone();
             Mat img_canny;
             Mat[] img_finals;
             Mat[] img_at;
-            timings.addSplit("cv 0");
 
             img_temp = OpenCVProcessing.process1_contrast(img_temp);
             publishProgress(40);
-            timings.addSplit("cv 1");
 
             img_temp = OpenCVProcessing.process2_removeNoise(img_temp);
             publishProgress(45);
-            timings.addSplit("cv 2");
 
             img_canny = OpenCVProcessing.process3_canny(img_temp);
             publishProgress(55);
-            timings.addSplit("cv 3");
 
             img_at = OpenCVProcessing.process4_at(img);
             publishProgress(75);
-            timings.addSplit("cv 4");
 
             img_finals = OpenCVProcessing.process5_subtraction(img_at, img_canny);
             publishProgress(90);
-            timings.addSplit("cv 5");
 
             final_bitmap_array = new Bitmap[3];
             final_bitmap_array_transparent = new Bitmap[3];
@@ -879,8 +851,6 @@ public class PostProcess extends AppCompatActivity {
                 final_bitmap_array_transparent[i] = makeTransparent(final_bitmap);
                 publishProgress(100);
             }
-            timings.addSplit("cv done");
-            timings.dumpToLog();
 
             return final_bitmap_array;
         }
